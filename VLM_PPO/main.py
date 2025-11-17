@@ -1,6 +1,9 @@
-from patch import replace_llama_attn_with_xformers_attn
+from patch import replace_llama_attn_with_xformers_attn, XFORMERS_AVAILABLE
 replace_llama_attn_with_xformers_attn()
-print("using xformers")
+if XFORMERS_AVAILABLE:
+    print("using xformers")
+else:
+    print("using standard PyTorch attention (xformers not available)")
 
 import copy
 import glob
