@@ -12,8 +12,10 @@ from torch import nn
 
 try:
     import xformers.ops
+    XFORMERS_AVAILABLE = True
 except ImportError:
-    logging.error("xformers not found! Please install it before trying to use it.")
+    logging.warning("xformers not found! Falling back to standard PyTorch attention (may be slower).")
+    XFORMERS_AVAILABLE = False
 
 
 def replace_llama_attn_with_xformers_attn():
@@ -68,7 +70,8 @@ def xformers_forward(
     past_key_value = (key_states, value_states) if use_cache else None
 
     # We only apply xformers optimizations if we don't need to output the whole attention matrix
-    if not output_attentions:
+    # and xformers is available
+    if not output_attentions and XFORMERS_AVAILABLE:
         query_states = query_states.transpose(1, 2)
         key_states = key_states.transpose(1, 2)
         value_states = value_states.transpose(1, 2)
