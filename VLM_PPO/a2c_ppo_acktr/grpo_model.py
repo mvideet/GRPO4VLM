@@ -55,7 +55,7 @@ class GRPOVLMPolicy(nn.Module):
             action_list.append(self.projection_f(text_action))
         return output_ids_list, action_list, action_tokens_log_prob_list #return the log probs of every token
 
-    #returns just the action log probs
+    #returns just the action log probs mgiht have to change for the entire list
     def evaluate_actions(self, inputs, output_ids, INPUT_IDS=None):
         image_tensor = self.process_obs(inputs)
         if INPUT_IDS is None:
