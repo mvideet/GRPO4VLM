@@ -5,7 +5,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces.box import Box
-from gymnasium.wrappers.clip_action import ClipAction
+from gymnasium.wrappers import ClipAction
 from stable_baselines3.common.atari_wrappers import (ClipRewardEnv,
                                                      EpisodicLifeEnv,
                                                      FireResetEnv,

@@ -59,8 +59,12 @@ def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature
     scores = scores * (1/temperature)
     scores = scores.to(torch.float32)
     log_probs = torch.nn.functional.log_softmax(scores, dim=-1)
-    log_probs = log_probs.to(torch.bfloat16)
+    log_probs = log_probs.to(torch.bfloat16) 
     output_ids_mask = (output_ids != 0)[:, 1:]
+    #1)log_probs[:, input_token_len:-1] is the log probabilities of the output tokens except the last stop token
+    #2)output_ids[:, 1:]This is the sequence of generated tokens (shifted by one, because logits predict the next token).
+    #3)use torch.take_along_dim to get the log probabilities of the generated tokens in dimension2
+    
     selected_log_probs = output_ids_mask*torch.take_along_dim(log_probs[:, input_token_len:-1], output_ids[:,1:].unsqueeze(2), dim = 2).squeeze(2)
     unfolded = output_ids.unfold(dimension=-1, size=3, step=1)
     target = torch.tensor([29908,2467,1115]).to(base.device)
@@ -81,3 +85,40 @@ def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature
     action_tokens_log_prob = torch.sum(selected_log_probs[:,match_index-1:], dim = 1)
     sum_log_prob = thought_prob_coef*thought_log_prob + action_tokens_log_prob
     return values, sum_log_prob, action_tokens_log_prob
+
+
+def llava_evaluate_token_log_probs(value_model,input_ids, output_ids, image_tensor, temperature, thought_prob_coef):
+    if output_ids.size(0) != 1:
+        input_ids = input_ids.broadcast_to(output_ids.size(0), input_ids.size(-1))
+    base = value_model.base
+    image_tensor = image_tensor.to(base.device, dtype=base.dtype)
+    output_ids = output_ids.to(base.device)
+    input_ids = input_ids.to(base.device)
+    _, _, _, _, inputs_embeds, _ = base.prepare_inputs_labels_for_multimodal(torch.cat([input_ids, output_ids], dim = 1), None, None, None, None, image_tensor)
+
+    #calling the model
+    inputs_embeds = inputs_embeds.to(base.device, dtype = base.dtype)
+    #omit the first output token
+    outputs = base(
+        inputs_embeds = inputs_embeds,
+        output_hidden_states = True,
+        )
+    scores = outputs.logits
+
+    input_token_len = inputs_embeds.shape[1] - output_ids.shape[1]
+    hidden_states = outputs.hidden_states[-1][:, input_token_len-1]
+    scores = scores * (1/temperature)
+    scores = scores.to(torch.float32)
+    log_probs = torch.nn.functional.log_softmax(scores, dim=-1)
+    log_probs = log_probs.to(torch.bfloat16) 
+    output_ids_mask = (output_ids != 0)[:, 1:]
+    #1)log_probs[:, input_token_len:-1] is the log probabilities of the output tokens except the last stop token
+    #2)output_ids[:, 1:]This is the sequence of generated tokens (shifted by one, because logits predict the next token).
+    #3)use torch.take_along_dim to get the log probabilities of the generated tokens in dimension2
+    
+    selected_log_probs = output_ids_mask*torch.take_along_dim(log_probs[:, input_token_len:-1], output_ids[:,1:].unsqueeze(2), dim = 2).squeeze(2)
+    
+    # Return log probabilities for the entire trajectory (all generated tokens)
+    # Skip the first token (index 0) as its log prob is typically very small/unreliable
+    # Shape: [batch_size, num_generated_tokens - 1]
+    return selected_log_probs[:, 1:]
