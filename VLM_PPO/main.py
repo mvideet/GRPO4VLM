@@ -212,7 +212,7 @@ def main():
     num_explore = int(args.explore_portion*num_updates)
     prev_infos = []
     infos = []
-    for j in tqdm(range(num_updates)):
+    for j in tqdm[int](range(num_updates)):
 
         for step in range(args.num_steps):
             # Sample actions

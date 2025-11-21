@@ -35,6 +35,31 @@ def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
         values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef)
     return values, padded_output_ids, outputs, sum_log_probs, action_tokens_log_prob
 
+
+def grpo_llava_generate(base, tokenizer, input_ids, image_tensor, args, num_samples):
+    image_tensor = image_tensor.to(base.device, dtype = base.dtype)
+    _, _, _, _, inputs_embeds, _ = base.prepare_inputs_labels_for_multimodal(input_ids.to(base.device), None, None, None, None, image_tensor)
+    inputs_embeds = inputs_embeds.to(base.device, dtype = base.dtype)
+    with torch.inference_mode():
+        outputs = base.generate(
+        inputs_embeds = inputs_embeds,
+        do_sample=True,
+        temperature=args.temperature,
+        num_beams=args.num_beams,
+        max_new_tokens=args.max_new_tokens,
+        use_cache=True,
+        output_scores=True,
+        output_hidden_states=True,
+        return_dict_in_generate=True,
+        pad_token_id=tokenizer.eos_token_id,)
+        output_ids = outputs['sequences']
+    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+    padded_output_ids = torch.zeros(output_ids.size(0), 2*args.max_new_tokens).to(dtype=output_ids.dtype, device = output_ids.device)
+    padded_output_ids[:, :output_ids.size(1)] = output_ids
+    with torch.no_grad():
+        action_tokens_log_prob = llava_evaluate_token_log_probs(base, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef)
+    return padded_output_ids, outputs, action_tokens_log_prob
+
 def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef):
     if output_ids.size(0) != 1:
         input_ids = input_ids.broadcast_to(output_ids.size(0), input_ids.size(-1))

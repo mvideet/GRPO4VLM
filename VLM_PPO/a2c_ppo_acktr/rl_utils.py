@@ -106,3 +106,4 @@ def text_projection(text_actions: List[str], env_name):
             output_indices.append(random.randint(0, len(action_list) - 1))
     return torch.Tensor([output_indices]).long().reshape(-1, 1)
 
+#   TODO: Add a function to parse many actions out of maze, and then returns the actual instructions. 
