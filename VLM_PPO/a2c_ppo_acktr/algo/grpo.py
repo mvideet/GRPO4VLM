@@ -97,28 +97,31 @@ class GRPO():
                     adv_targ = adv_targ.to(action_log_probs.device)
                     token_masks_batch = token_masks_batch.to(action_log_probs.device)
                     
-                    # Compute per-token policy ratio
-                    # Shape: [num_questions, G, max_tokens]
-                    ratio = torch.exp(action_log_probs - old_action_log_probs_batch)
+                    # Sequence-level clipping: sum log probs over tokens to get sequence-level log probs
+                    # Shape: [num_questions, G, max_tokens] -> [num_questions, G]
+                    masked_new_log_probs = (action_log_probs * token_masks_batch).sum(dim=2)
+                    masked_old_log_probs = (old_action_log_probs_batch * token_masks_batch).sum(dim=2)
                     
-                    # Expand advantages to match token dimensions
-                    # adv_targ: [num_questions, G, 1] -> [num_questions, G, max_tokens]
-                    adv_targ_expanded = adv_targ.expand(-1, -1, max_tokens)
+                    # Compute sequence-level policy ratio
+                    # Shape: [num_questions, G]
+                    ratio_seq = torch.exp(masked_new_log_probs - masked_old_log_probs)
                     
-                    # PPO clipped objective per token
-                    surr1 = ratio * adv_targ_expanded
-                    surr2 = torch.clamp(ratio, 1.0 - self.clip_param,
-                                        1.0 + self.clip_param) * adv_targ_expanded
+                    # Clip at sequence level
+                    # Shape: [num_questions, G]
+                    ratio_clipped = torch.clamp(ratio_seq, 1.0 - self.clip_param, 1.0 + self.clip_param)
                     
-                    # Per-token loss
-                    per_token_loss = -torch.min(surr1, surr2)
+                    # PPO clipped objective at sequence level
+                    # adv_targ: [num_questions, G, 1] -> [num_questions, G]
+                    adv_targ_squeezed = adv_targ.squeeze(-1)
+                    surr1 = ratio_seq * adv_targ_squeezed
+                    surr2 = ratio_clipped * adv_targ_squeezed
                     
-                    # Apply token masks and average over tokens, then over completions
-                    # Shape: [num_questions, G] after masking and averaging over tokens
-                    masked_loss = (per_token_loss * token_masks_batch).sum(dim=2) / (token_masks_batch.sum(dim=2) + 1e-8)
+                    # Sequence-level loss (one per completion)
+                    # Shape: [num_questions, G]
+                    seq_loss = -torch.min(surr1, surr2)
                     
                     # Average over completions and questions
-                    action_loss = masked_loss.mean()
+                    action_loss = seq_loss.mean()
                     
                     # Add KL divergence penalty if beta > 0
                     if self.beta > 0 and self.ref_model is not None:
@@ -129,7 +132,7 @@ class GRPO():
                             ref_action_log_probs = ref_action_log_probs.view(num_questions, G, max_tokens)
                             ref_action_log_probs = ref_action_log_probs.to(action_log_probs.device)
                         
-                        # Compute KL divergence per token
+                        # Compute KL divergence per token unbiased estimator
                         # KL(p||q) = exp(log_p - log_q) - (log_p - log_q) - 1
                         per_token_kl = torch.exp(ref_action_log_probs - action_log_probs) - \
                                       (ref_action_log_probs - action_log_probs) - 1
