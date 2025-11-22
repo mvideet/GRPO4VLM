@@ -42,80 +42,129 @@ class GRPO():
         self.accelerator = accelerator
 
     def update(self, rollouts):
-        advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
-        advantages = (advantages - advantages.mean()) / (
-            advantages.std() + 1e-5)
+        """
+        Update policy using GRPO (Group Relative Policy Optimization).
+        
+        Args:
+            rollouts: GRPORolloutStorage with shapes:
+                - obs: [1, num_processes, *obs_shape]
+                - output_ids: [1, num_processes, num_generations, 2*max_new_tokens]
+                - rewards: [1, num_processes, num_generations, 1]
+                - action_log_probs: [1, num_processes, num_generations, max_tokens] (per-token)
+                - token_masks: [1, num_processes, num_generations, max_tokens]
+        """
+        # Compute group-relative advantages
+        # Shape: [1, num_processes, num_generations, 1]
+        advantages = rollouts.compute_group_relative_advantages()
+        
+        # Normalize advantages globally (optional, but helps with training stability)
+        advantages_flat = advantages.view(-1)
+        advantages_normalized = (advantages_flat - advantages_flat.mean()) / (advantages_flat.std() + 1e-5)
+        advantages = advantages_normalized.view(advantages.shape)
 
-        value_loss_epoch = 0
         action_loss_epoch = 0
         dist_entropy_epoch = 0
         grad_step = 0
-        self.actor_critic.train()
+        self.policy.train()
+        
         for e in range(self.ppo_epoch):
             data_generator = rollouts.feed_forward_generator(
                     advantages, self.mini_batch_size)
             for sample in data_generator:
-                with self.accelerator.accumulate(self.actor_critic):
+                with self.accelerator.accumulate(self.policy):
                     grad_step += 1
+                   
                     obs_batch, output_ids_batch, actions_batch, \
-                    value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
-                            adv_targ = sample
-                    # Reshape to do in a single forward pass for all steps
-                    values, action_log_probs = self.actor_critic.evaluate_actions(
-                        obs_batch, output_ids_batch)
-                    # values and action_log_probs on two different devices!! because they come from two llava
+                    masks_batch, old_action_log_probs_batch, \
+                    token_masks_batch, adv_targ = sample
+                    
+                    # Reshape for batch processing: flatten questions and generations
+                    # [num_questions * G, ...]
+                    num_questions, G, max_tokens = old_action_log_probs_batch.shape
+                    obs_batch_flat = obs_batch.unsqueeze(1).expand(-1, G, *obs_batch.shape[1:]).contiguous()
+                    obs_batch_flat = obs_batch_flat.view(num_questions * G, *obs_batch.shape[1:])
+                    output_ids_batch_flat = output_ids_batch.view(num_questions * G, -1)
+
+                    action_log_probs = self.policy.evaluate_actions(
+                        obs_batch_flat, output_ids_batch_flat)
+                    
                     if torch.isnan(action_log_probs).any():
                         continue
-                    old_action_log_probs_batch = old_action_log_probs_batch.to(action_log_probs.device).view(-1)
+                    
+                    action_log_probs = action_log_probs.view(num_questions, G, max_tokens)
+                    
+                    old_action_log_probs_batch = old_action_log_probs_batch.to(action_log_probs.device)
                     adv_targ = adv_targ.to(action_log_probs.device)
-                    value_preds_batch = value_preds_batch.to(values.device)
-                    return_batch = return_batch.to(values.device)
-
-
-                    ratio = torch.exp(action_log_probs -
-                                    old_action_log_probs_batch)
-
-                    surr1 = ratio * adv_targ
+                    token_masks_batch = token_masks_batch.to(action_log_probs.device)
+                    
+                    # Compute per-token policy ratio
+                    # Shape: [num_questions, G, max_tokens]
+                    ratio = torch.exp(action_log_probs - old_action_log_probs_batch)
+                    
+                    # Expand advantages to match token dimensions
+                    # adv_targ: [num_questions, G, 1] -> [num_questions, G, max_tokens]
+                    adv_targ_expanded = adv_targ.expand(-1, -1, max_tokens)
+                    
+                    # PPO clipped objective per token
+                    surr1 = ratio * adv_targ_expanded
                     surr2 = torch.clamp(ratio, 1.0 - self.clip_param,
-                                        1.0 + self.clip_param) * adv_targ
-                    ## ratio clip, inspired by https://github.com/huggingface/trl/blob/5a233546ee48532eaeb24b89b8d0042147574688/trl/trainer/ppo_trainer.py#L1199
-                    if torch.any(ratio > 10):
-                        action_loss = -surr2.mean()
-                    else:
-                        action_loss = -torch.min(surr1, surr2).mean()
-                    if self.use_clipped_value_loss:
-                        value_pred_clipped = value_preds_batch + \
-                            (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
-                        value_losses = (values - return_batch).pow(2)
-                        value_losses_clipped = (
-                            value_pred_clipped - return_batch).pow(2)
-                        value_loss = 0.5 * torch.max(value_losses,
-                                                    value_losses_clipped).mean()
-                    else:
-                        value_loss = 0.5 * (return_batch - values).pow(2).mean()
+                                        1.0 + self.clip_param) * adv_targ_expanded
+                    
+                    # Per-token loss
+                    per_token_loss = -torch.min(surr1, surr2)
+                    
+                    # Apply token masks and average over tokens, then over completions
+                    # Shape: [num_questions, G] after masking and averaging over tokens
+                    masked_loss = (per_token_loss * token_masks_batch).sum(dim=2) / (token_masks_batch.sum(dim=2) + 1e-8)
+                    
+                    # Average over completions and questions
+                    action_loss = masked_loss.mean()
+                    
+                    # Add KL divergence penalty if beta > 0
+                    if self.beta > 0 and self.ref_model is not None:
+                        # Get reference model's log probabilities
+                        with torch.no_grad():
+                            ref_action_log_probs = self.ref_model.evaluate_actions(
+                                obs_batch_flat, output_ids_batch_flat)
+                            ref_action_log_probs = ref_action_log_probs.view(num_questions, G, max_tokens)
+                            ref_action_log_probs = ref_action_log_probs.to(action_log_probs.device)
+                        
+                        # Compute KL divergence per token
+                        # KL(p||q) = exp(log_p - log_q) - (log_p - log_q) - 1
+                        per_token_kl = torch.exp(ref_action_log_probs - action_log_probs) - \
+                                      (ref_action_log_probs - action_log_probs) - 1
+                        
+                        # Average KL over tokens and completions
+                        masked_kl = (per_token_kl * token_masks_batch).sum(dim=2) / (token_masks_batch.sum(dim=2) + 1e-8)
+                        kl_penalty = self.beta * masked_kl.mean()
+                        action_loss = action_loss + kl_penalty
+                        dist_entropy_epoch += kl_penalty.item()
 
                     try:
-                        assert not torch.isnan(value_loss), "value_loss is nan"
                         assert not torch.isnan(action_loss), "action_loss is nan"
                     except:
-                        print("value/action loss is nan")
+                        print("action loss is nan")
                         exit(1)
-                    loss = value_loss * self.value_loss_coef+action_loss
+                    
+                    loss = action_loss
                     self.accelerator.backward(loss)
+                    
                     if self.accelerator.sync_gradients:
-
                         self.accelerator.clip_grad_norm_(
-                            self.actor_critic.parameters(),
+                            self.policy.parameters(),
                             self.max_grad_norm
                         )
+                    
                     self.optimizer.step()
                     self.optimizer.zero_grad()
 
-                    value_loss_epoch += value_loss.item()
                     action_loss_epoch += action_loss.item()
 
-        value_loss_epoch /= grad_step
-        action_loss_epoch /= grad_step
-        dist_entropy_epoch /= grad_step
+        if grad_step > 0:
+            action_loss_epoch /= grad_step
+            dist_entropy_epoch /= grad_step
+        else:
+            action_loss_epoch = 0
+            dist_entropy_epoch = 0
 
-        return value_loss_epoch, action_loss_epoch, dist_entropy_epoch
+        return 0.0, action_loss_epoch, dist_entropy_epoch  # No value loss for GRPO

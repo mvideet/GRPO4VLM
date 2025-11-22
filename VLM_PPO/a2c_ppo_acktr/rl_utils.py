@@ -61,6 +61,20 @@ def get_prompt(env_name, action_only, infos = None):
             qs = qs + "If the current formula equals 24, output '='. "
             qs = qs + "Otherwise consider which number or operator should be appended to the current formula to make it equal 24.} \n"
         qs = qs + "\"action\": \"{number}\" or \"{operator}\" \n \}"
+    elif env_name =='Maze-v0_GRPO':
+        qs = (
+            "You are an extremely smart maze solver. You are observing a top-down view of the maze. "
+            "Your goal is to move from the current start position to the goal position, which is shown as a red square. "
+            "You need to solve the entire maze in one shot without getting stuck. "
+            "First, think step-by-step about the complete path you will take. "
+            "After you have finished thinking, output the full trajectory as a sequence of actions. "
+            "You can choose between the four directions: ['up', 'down', 'left', 'right']. "
+            "Your response MUST be a valid JSON object in the following format:\n"
+            "{\n"
+            '  "thoughts": "{first think carefully through the full path you will take}",\n'
+            '  "actions": ["up", "right", "right", "..."]\n'
+            "}"
+        )
     return qs
 
 # Define the function that processes the list of strings according to the specified rules
@@ -107,3 +121,5 @@ def text_projection(text_actions: List[str], env_name):
     return torch.Tensor([output_indices]).long().reshape(-1, 1)
 
 #   TODO: Add a function to parse many actions out of maze, and then returns the actual instructions. 
+def grpo_maze_parse(text_actions : List[str]):
+    
