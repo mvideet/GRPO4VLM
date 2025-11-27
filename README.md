@@ -78,3 +78,6 @@ url={https://openreview.net/forum?id=nBjmMF2IZU}
 <a id="acknowledgement"></a>
 Our codebases adopt [LLaVA](https://github.com/haotian-liu/LLaVA) as a backbone model and apply [PPO from this repo](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail) for RL fine-tuning. In principle, one may try to adapt our pipeline to different VLM / MLLM backbones and different RL algorithms.
 
+
+Text: GRPO Branch Here
+
