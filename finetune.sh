@@ -1,12 +1,12 @@
 #!/bin/bash
-
-deepspeed --include localhost:0,1,2,3 \
+#we are going to use the single GPU for now
+deepspeed --include localhost:0 \ 
     llava/train/train_mem.py \
     --deepspeed ./scripts/zero3.json \
     --model_name_or_path liuhaotian/llava-v1.6-mistral-7b \
     --version v1 \
-    --data_path /path_to_json_file \
-    --image_folder /path_to_image_file \
+    --data_path /Users/videetmehta/Desktop/CS Projects/RL4VLM/VLM_PPO/a2c_ppo_acktr/synthetic_data_llava.json \
+    --image_folder /Users/videetmehta/Desktop/CS Projects/RL4VLM/VLM_PPO/a2c_ppo_acktr/synthetic_data_llava.json \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \
@@ -15,7 +15,7 @@ deepspeed --include localhost:0,1,2,3 \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir /path_to_your_saved_json \
+    --output_dir /Users/videetmehta/Desktop/CS Projects/RL4VLM/model_checkpoints/sft_ckpt \
     --num_train_epochs 1 \
     --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
