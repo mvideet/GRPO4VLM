@@ -1,6 +1,3 @@
-"""
-Maze environment utilities for visualization and dense reward computation.
-"""
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
@@ -9,20 +6,23 @@ import io
 
 
 class MazeVisualizationWrapper(gym.Wrapper):
-    """
-    Wrapper that adds visualization to the maze environment.
-    Converts the maze state to an RGB image for VLM input.
-    """
     
     def __init__(self, env, cell_size=None, wall_color=(0, 0, 0), 
                  path_color=(255, 255, 255), agent_color=(0, 255, 0),
                  goal_color=(255, 0, 0), visited_color=(200, 200, 200), max_image_size=300):
         super().__init__(env)
-        # Auto-adjust cell_size based on maze size if not provided
+        size_attr = getattr(env, 'maze_size', None)
+        if size_attr is None and hasattr(env, 'unwrapped'):
+            size_attr = getattr(env.unwrapped, 'maze_size', None)
+        if size_attr is None:
+            size_attr = (5, 5)
+        if not isinstance(size_attr, (tuple, list)):
+            size_attr = (size_attr, size_attr)
+        self.maze_size = tuple(size_attr)
+
         if cell_size is None:
-            # Calculate cell size to keep image around max_image_size
-            # This ensures large mazes don't create huge images
-            cell_size = max(2, int(max_image_size / max(self.maze_size)))
+            max_dim = max(self.maze_size)
+            cell_size = max(2, int(max_image_size / max_dim))
         self.cell_size = cell_size
         self.max_image_size = max_image_size
         self.wall_color = wall_color
@@ -30,44 +30,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
         self.agent_color = agent_color
         self.goal_color = goal_color
         self.visited_color = visited_color
-        
-        # Get maze dimensions
-        # First, try to get from DenseRewardWrapper if it has maze_size
-        if hasattr(env, 'maze_size'):
-            self.maze_size = env.maze_size if isinstance(env.maze_size, (tuple, list)) else (env.maze_size, env.maze_size)
-        elif hasattr(env, 'unwrapped') and hasattr(env.unwrapped, 'maze_size'):
-            size = env.unwrapped.maze_size
-            self.maze_size = size if isinstance(size, (tuple, list)) else (size, size)
-        else:
-            # Try to infer from observation space or environment
-            # Default to 5x5, but try to get from env
-            unwrapped = env
-            while hasattr(unwrapped, 'env'):
-                unwrapped = unwrapped.env
-            if hasattr(unwrapped, 'maze_size'):
-                size = unwrapped.maze_size
-                self.maze_size = size if isinstance(size, (tuple, list)) else (size, size)
-            elif hasattr(unwrapped, 'observation_space'):
-                # Try to infer from observation space
-                obs_space = unwrapped.observation_space
-                if hasattr(obs_space, 'shape') and len(obs_space.shape) >= 2:
-                    # Assuming observation is [row, col] or similar
-                    self.maze_size = (obs_space.shape[0], obs_space.shape[1]) if len(obs_space.shape) >= 2 else (5, 5)
-                else:
-                    self.maze_size = (5, 5)  # default
-            else:
-                self.maze_size = (5, 5)  # default
-        
-        # Ensure maze_size is a tuple
-        if not isinstance(self.maze_size, (tuple, list)):
-            self.maze_size = (self.maze_size, self.maze_size)
-        self.maze_size = tuple(self.maze_size)
-        
-        # Auto-adjust cell_size if not provided
-        if cell_size is None:
-            # Calculate cell size to keep image around max_image_size
-            max_dim = max(self.maze_size)
-            self.cell_size = max(2, int(max_image_size / max_dim))
         
         # Track visited cells for visualization
         self.visited_cells = set()
@@ -80,36 +42,20 @@ class MazeVisualizationWrapper(gym.Wrapper):
         )
         
     def _get_maze_structure(self):
-        """Extract maze structure from environment."""
         # Try to get maze structure from environment
         if hasattr(self.env, 'maze_structure'):
             return self.env.maze_structure
         elif hasattr(self.env.unwrapped, 'maze_structure'):
             return self.env.unwrapped.maze_structure
         else:
-            # Default: assume we can get it from observation
-            # This is a fallback - may need adjustment based on actual gym-maze implementation
             return None
     
     def _render_maze_image(self, agent_pos, goal_pos):
-        """
-        Render the maze as an RGB image.
-        
-        Args:
-            agent_pos: Current agent position (row, col)
-            goal_pos: Goal position (row, col)
-        
-        Returns:
-            numpy array of shape (height, width, 3) with RGB values
-        """
         height = self.maze_size[0] * self.cell_size
         width = self.maze_size[1] * self.cell_size
         
-        # Create PIL image
         img = Image.new('RGB', (width, height), color=self.path_color)
         draw = ImageDraw.Draw(img)
-        
-        # Get maze structure
         maze_structure = self._get_maze_structure()
         
         # Draw walls if we have maze structure
@@ -120,12 +66,9 @@ class MazeVisualizationWrapper(gym.Wrapper):
                     y1 = i * self.cell_size
                     x2 = x1 + self.cell_size
                     y2 = y1 + self.cell_size
-                    
-                    # Check if this cell is a wall
-                    if maze_structure[i][j] == 1:  # Assuming 1 = wall
+                    if maze_structure[i][j] == 1: 
                         draw.rectangle([x1, y1, x2, y2], fill=self.wall_color)
         
-        # Draw visited cells
         for (row, col) in self.visited_cells:
             x1 = col * self.cell_size
             y1 = row * self.cell_size
@@ -133,7 +76,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
             y2 = y1 + self.cell_size
             draw.rectangle([x1, y1, x2, y2], fill=self.visited_color)
         
-        # Draw goal
         goal_x1 = goal_pos[1] * self.cell_size
         goal_y1 = goal_pos[0] * self.cell_size
         goal_x2 = goal_x1 + self.cell_size
@@ -162,7 +104,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return img_array
     
     def reset(self, **kwargs):
-        """Reset environment and return visualized observation."""
         obs, info = self.env.reset(**kwargs)
         self.visited_cells = set()
         
@@ -185,7 +126,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return visual_obs, info
     
     def step(self, action):
-        """Step environment and return visualized observation."""
         obs, reward, terminated, truncated, info = self.env.step(action)
         
         # Extract positions
@@ -282,20 +222,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
 
 
 def compute_dense_reward(previous_pos, current_pos, goal_pos):
-    """
-    Compute dense reward based on euclidean distance reduction.
-    
-    Reward = (previous_distance - current_distance)
-    This gives positive reward for moving closer to goal.
-    
-    Args:
-        previous_pos: Previous agent position (row, col)
-        current_pos: Current agent position (row, col)
-        goal_pos: Goal position (row, col)
-    
-    Returns:
-        float: Dense reward value
-    """
     if previous_pos is None or current_pos is None or goal_pos is None:
         return 0.0
     
@@ -319,10 +245,6 @@ def compute_dense_reward(previous_pos, current_pos, goal_pos):
 
 
 class DenseRewardWrapper(gym.Wrapper):
-    """
-    Wrapper that replaces environment reward with dense euclidean distance reward.
-    """
-    
     def __init__(self, env, maze_size=None):
         super().__init__(env)
         self.previous_pos = None
@@ -342,7 +264,6 @@ class DenseRewardWrapper(gym.Wrapper):
                 self.maze_size = (5, 5)  # default
     
     def reset(self, **kwargs):
-        """Reset and store initial positions."""
         obs, info = self.env.reset(**kwargs)
         
         # Handle vectorized environments (info is a list)
@@ -398,7 +319,6 @@ class DenseRewardWrapper(gym.Wrapper):
         return obs, info
     
     def step(self, action):
-        """Step and compute dense reward."""
         obs, reward, terminated, truncated, info = self.env.step(action)
         
         # Handle vectorized environments

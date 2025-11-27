@@ -35,12 +35,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False, maz
             env = dmc2gym.make(domain_name=domain, task_name=task)
             env = ClipAction(env)
         else:
-            # Handle custom maze sizes
-            if 'maze-custom' in env_id.lower() and maze_size is not None:
-                from a2c_ppo_acktr.curriculum import create_custom_maze_env
-                env = create_custom_maze_env(maze_size, seed=seed+rank)
-            else:
-                env = gym.make(env_id)
+            env = gym.make(env_id)
             
         # Apply maze-specific wrappers if it's a maze environment
         if 'maze' in env_id.lower() or 'gym_maze' in env_id.lower():
