@@ -41,7 +41,7 @@ class GRPO():
         self.optimizer = optimizer
         self.accelerator = accelerator
 
-    def update(self, rollouts):
+    def update(self, rollouts, rl_algo = "grpo"):
         """
         Update policy using GRPO (Group Relative Policy Optimization).
         
