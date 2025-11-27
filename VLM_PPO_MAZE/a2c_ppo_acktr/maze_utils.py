@@ -29,12 +29,8 @@ class MazeVisualizationWrapper(gym.Wrapper):
         self.path_color = path_color
         self.agent_color = agent_color
         self.goal_color = goal_color
-        self.visited_color = visited_color
-        
-        # Track visited cells for visualization
+        self.visited_color = visited_color     
         self.visited_cells = set()
-        
-        # Update observation space to RGB image
         height = self.maze_size[0] * self.cell_size
         width = self.maze_size[1] * self.cell_size
         self.observation_space = spaces.Box(
@@ -42,7 +38,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
         )
         
     def _get_maze_structure(self):
-        # Try to get maze structure from environment
         if hasattr(self.env, 'maze_structure'):
             return self.env.maze_structure
         elif hasattr(self.env.unwrapped, 'maze_structure'):
@@ -57,8 +52,6 @@ class MazeVisualizationWrapper(gym.Wrapper):
         img = Image.new('RGB', (width, height), color=self.path_color)
         draw = ImageDraw.Draw(img)
         maze_structure = self._get_maze_structure()
-        
-        # Draw walls if we have maze structure
         if maze_structure is not None:
             for i in range(self.maze_size[0]):
                 for j in range(self.maze_size[1]):
