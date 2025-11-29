@@ -53,7 +53,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False, maz
             env = NoopResetEnv(env, noop_max=30)
             env = MaxAndSkipEnv(env, skip=4)
 
-        env.reset(seed=seed+rank)
+        env.reset()
 
         if str(env.__class__.__name__).find('TimeLimit') >= 0:
             env = TimeLimitMask(env)
@@ -134,7 +134,7 @@ class TimeLimitMask(gym.Wrapper):
         return obs, rew, terminated, truncated, info
 
     def reset(self, **kwargs):
-        return self.env.reset(**kwargs)
+        return self.env.reset()
 
 
 # Can be used to test recurrent policies for Reacher-v2

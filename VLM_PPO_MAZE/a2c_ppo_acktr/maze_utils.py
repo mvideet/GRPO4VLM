@@ -97,7 +97,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return img_array
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
+        obs, info = self.env.reset()
         self.visited_cells = set()
         
         # Extract agent and goal positions
@@ -257,7 +257,7 @@ class DenseRewardWrapper(gym.Wrapper):
                 self.maze_size = (5, 5)  # default
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
+        obs, info = self.env.reset()
         
         # Handle vectorized environments (info is a list)
         if isinstance(info, list) and len(info) > 0:
