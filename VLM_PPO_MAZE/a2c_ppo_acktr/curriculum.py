@@ -42,7 +42,7 @@ class MazeCurriculum:
     
     def get_current_env_name(self) -> str:
         size = self.current_size
-        return f"MazeEnvRandom{size}x{size}"
+        return f"maze-random-{size}x{size}-v0"
     
     def record_episode(self, success: bool):
         self.episode_count += 1
