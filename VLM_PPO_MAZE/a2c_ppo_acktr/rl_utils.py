@@ -11,15 +11,19 @@ def get_prompt(env_name, action_only=False, infos=None):
     """
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze environment prompt
-        qs = "You are navigating a maze. You can see the maze layout in the image. "
-        qs = qs + "The green circle represents your current position, and the red circle represents the goal. "
-        qs = qs + "Your goal is to navigate from your current position to the goal by choosing the correct direction. "
-        qs = qs + "You can choose between the following actions: ['up', 'down', 'left', 'right']. "
-        qs = qs + "Your response should be a valid json file in the following format: \n{\n"
-        if not action_only:
-            qs = qs + "\"thoughts\": \"{first describe your current position and the goal position in the maze, "
-            qs = qs + "then think carefully about which direction (up, down, left, or right) will move you closer to the goal}\", \n"
-        qs = qs + "\"action\": \"up\" or \"down\" or \"left\" or \"right\" \n}"
+        qs = (
+            "You are an extremely smart maze solver. You are observing a top-down view of the maze. "
+            "Your goal is to move from the current start position to the goal position, which is shown as a red square. "
+            "You need to solve the entire maze in one shot without getting stuck. "
+            "First, think step-by-step about the complete path you will take. "
+            "After you have finished thinking, output the full trajectory as a sequence of actions. "
+            "You can choose between the four directions: ['up', 'down', 'left', 'right']. "
+            "Your response MUST be a valid JSON object in the following format:\n"
+            "{\n"
+            '  "thoughts": "{first think carefully through the full path you will take}",\n'
+            '  "actions": ["up", "right", "right", "..."]\n'
+            "}"
+        )
         return qs
     elif env_name == 'gym_cards/NumberLine-v0':
         qs = "You are playing a game called number line. You will see a target number and a current number in the image. "
