@@ -3,9 +3,7 @@
 # Change to LLaVA directory to run the training script
 cd "$(dirname "$0")/LLaVA" || exit 1
 
-uv run --extra train deepspeed --include localhost:0 \
-    llava/train/train_mem.py \
-    --deepspeed ./scripts/zero3.json \
+uv run --extra train python -u llava/train/train_mem.py \
     --model_name_or_path liuhaotian/llava-v1.6-mistral-7b \
     --version v1 \
     --data_path ../VLM_PPO/a2c_ppo_acktr/synthetic_data_llava.json \
@@ -20,8 +18,8 @@ uv run --extra train deepspeed --include localhost:0 \
     --bf16 True \
     --output_dir ../model_checkpoints/sft_ckpt \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 16 \
-    --per_device_eval_batch_size 4 \
+    --per_device_train_batch_size 1 \
+    --per_device_eval_batch_size 1 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
@@ -36,5 +34,6 @@ uv run --extra train deepspeed --include localhost:0 \
     --model_max_length 2048 \
     --gradient_checkpointing True \
     --dataloader_num_workers 4 \
-    --lazy_preprocess True
+    --lazy_preprocess True \
+    --optim adamw_bnb_8bit
     # --report_to wandb

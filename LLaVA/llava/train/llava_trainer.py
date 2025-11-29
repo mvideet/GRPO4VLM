@@ -13,6 +13,16 @@ from transformers.trainer import (
     logger,
 )
 from typing import List, Optional
+from accelerate import Accelerator
+from accelerate.utils import GradientAccumulationPlugin
+import inspect
+
+# Try to import is_accelerate_available, fallback if not available
+try:
+    from transformers.utils import is_accelerate_available
+except ImportError:
+    def is_accelerate_available(version=None):
+        return False
 
 
 def maybe_zero_3(param, ignore_status=False, name=None):
@@ -131,6 +141,53 @@ class LengthGroupedSampler(Sampler):
 
 
 class LLaVATrainer(Trainer):
+
+    def create_accelerator_and_postprocess(self):
+        """
+        Override to handle compatibility with older accelerate versions that don't support dispatch_batches.
+        """
+        grad_acc_kwargs = {"num_steps": self.args.gradient_accumulation_steps}
+        grad_acc_kwargs["sync_with_dataloader"] = False
+        gradient_accumulation_plugin = GradientAccumulationPlugin(**grad_acc_kwargs)
+
+        # Check if Accelerator supports dispatch_batches parameter
+        accelerator_sig = inspect.signature(Accelerator.__init__)
+        accelerator_kwargs = {
+            "split_batches": self.args.split_batches,
+            "deepspeed_plugin": self.args.deepspeed_plugin,
+            "gradient_accumulation_plugin": gradient_accumulation_plugin,
+        }
+        
+        # Only add dispatch_batches if it's supported
+        if "dispatch_batches" in accelerator_sig.parameters:
+            accelerator_kwargs["dispatch_batches"] = self.args.dispatch_batches
+
+        # create accelerator object
+        self.accelerator = Accelerator(**accelerator_kwargs)
+        
+        # some Trainer classes need to use `gather` instead of `gather_for_metrics`, thus we store a flag
+        self.gather_function = self.accelerator.gather_for_metrics
+
+        # deepspeed and accelerate flags covering both trainer args and accelerate launcher
+        self.is_deepspeed_enabled = getattr(self.accelerator.state, "deepspeed_plugin", None) is not None
+        self.is_fsdp_enabled = getattr(self.accelerator.state, "fsdp_plugin", None) is not None
+
+        # post accelerator creation setup
+        if self.is_fsdp_enabled:
+            fsdp_plugin = self.accelerator.state.fsdp_plugin
+            fsdp_plugin.limit_all_gathers = self.args.fsdp_config.get(
+                "limit_all_gathers", fsdp_plugin.limit_all_gathers
+            )
+            if is_accelerate_available("0.23.0"):
+                fsdp_plugin.activation_checkpointing = self.args.fsdp_config.get(
+                    "activation_checkpointing", fsdp_plugin.activation_checkpointing
+                )
+                if fsdp_plugin.activation_checkpointing and self.args.gradient_checkpointing:
+                    raise ValueError(
+                        "The activation_checkpointing in FSDP config and the gradient_checkpointing in training arg "
+                        "can't be set to True simultaneously. Please use FSDP's activation_checkpointing logic "
+                        "when using FSDP."
+                    )
 
     def _get_train_sampler(self) -> Optional[torch.utils.data.Sampler]:
         if self.train_dataset is None or not has_length(self.train_dataset):
