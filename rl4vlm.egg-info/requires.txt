@@ -4,7 +4,7 @@ transformers==4.37.2
 tokenizers==0.15.1
 sentencepiece>=0.1.99
 accelerate==0.21.0
-peft
+peft==0.10.0
 gym
 matplotlib
 stable-baselines3
@@ -26,6 +26,6 @@ timm==0.6.13
 openai
 
 [train]
-deepspeed==0.12.6
+deepspeed>=0.14.0
 ninja
 wandb
