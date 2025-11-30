@@ -140,7 +140,7 @@ def text_projection(text_actions: List[str], env_name):
     output_indices = []
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze actions: up=0, right=1, down=2, left=3 (standard gym-maze convention)
-        action_list = ["up", "right", "down", "left"]
+        action_list = ["N", "S", "E", "W"]
     elif env_name == 'gym_cards/NumberLine-v0':
         action_list = ["-", "+"]
     elif env_name == 'gym_cards/Blackjack-v0':
