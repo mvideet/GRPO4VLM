@@ -4,6 +4,12 @@ from gymnasium import spaces
 from PIL import Image, ImageDraw, ImageFont
 import io
 
+def _unwrap_env(env):
+    base = env
+    while hasattr(base, "env"):
+        base = base.env
+    return base
+
 
 class MazeVisualizationWrapper(gym.Wrapper):
     
@@ -197,20 +203,28 @@ class MazeVisualizationWrapper(gym.Wrapper):
             elif 'goal' in info_dict:
                 return info_dict['goal']
         
-        # Try to get from environment
-        env = self.env
-        while hasattr(env, 'env'):
-            env = env.env
-        if hasattr(env, 'goal'):
-            goal = env.goal
-            if isinstance(goal, (list, tuple, np.ndarray)) and len(goal) >= 2:
+        base = _unwrap_env(self.env)
+
+        # In gym-maze, MazeEnv has a .maze_view attribute which is a MazeView2D
+        mv = getattr(base, "maze_view", None)
+        if mv is not None and hasattr(mv, "goal"):
+            goal = mv.goal  # e.g. numpy array [x, y]
+            if isinstance(goal, np.ndarray):
+                goal = goal.tolist()
+            # Ensure it's a simple [row, col] / [x, y]
+            if isinstance(goal, (list, tuple)) and len(goal) >= 2:
                 return list(goal[:2])
-        elif hasattr(env, 'unwrapped'):
-            unwrapped = env.unwrapped
-            if hasattr(unwrapped, 'goal'):
-                goal = unwrapped.goal
-                if isinstance(goal, (list, tuple, np.ndarray)) and len(goal) >= 2:
-                    return list(goal[:2])
+
+        # 3) As a *very* last resort, infer from maze size (still derived from env)
+        # (this is logically bottom-right, but derived from env.maze_size, not a magic constant)
+        if mv is not None and hasattr(mv, "maze"):
+            maze = mv.maze  # Maze object
+            if hasattr(maze, "maze_size"):
+                size = maze.maze_size
+                if isinstance(size, (list, tuple)) and len(size) >= 2:
+                    # bottom right cell
+                    return [size[0] - 1, size[1] - 1]
+
         return None
 
 
@@ -290,14 +304,21 @@ class DenseRewardWrapper(gym.Wrapper):
         elif 'goal' in info_dict:
             self.goal_pos = info_dict['goal']
         else:
-            # Try to get from environment
-            env = self.env
-            while hasattr(env, 'env'):
-                env = env.env
-            if hasattr(env, 'goal'):
-                goal = env.goal
-                if isinstance(goal, (list, tuple, np.ndarray)) and len(goal) >= 2:
+            base = _unwrap_env(self.env)
+            mv = getattr(base, "maze_view", None)
+            if mv is not None and hasattr(mv, "goal"):
+                goal = mv.goal
+                if isinstance(goal, np.ndarray):
+                    goal = goal.tolist()
+                if isinstance(goal, (list, tuple)) and len(goal) >= 2:
                     self.goal_pos = list(goal[:2])
+
+            if self.goal_pos is None and mv is not None and hasattr(mv, "maze"):
+                maze = mv.maze
+                if hasattr(maze, "maze_size"):
+                    size = maze.maze_size
+                    if isinstance(size, (list, tuple)) and len(size) >= 2:
+                        self.goal_pos = [size[0] - 1, size[1] - 1]
         
         # Store in info for visualization wrapper
         if isinstance(info, list):
