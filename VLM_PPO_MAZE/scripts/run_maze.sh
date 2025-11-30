@@ -19,10 +19,10 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config
     --train-vision all \
     --use-curriculum \
     --curriculum-start-size 5 \
-    --curriculum-end-size 20 \
+    --curriculum-end-size 100 \
     --curriculum-progression success_rate \
     --curriculum-success-threshold 0.7 \
-    --curriculum-min-episodes 20 \
+    --curriculum-min-episodes 100 \
     --wandb-project VLM_GRPO \
     --wandb-run MAZE_PPO_SFT \
     --use-wandb \
