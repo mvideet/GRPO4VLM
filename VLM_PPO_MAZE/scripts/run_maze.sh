@@ -5,9 +5,9 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0,1" accelerate launch --conf
     --lr_max_steps 25 \
     --eval-num-per-episode 1000 \
     --num-env-steps 15000 \
-    --num-steps 512 \
-    --grad-accum-steps 128 \
-    --max-new-tokens 256 \
+    --num-steps 64 \
+    --grad-accum-steps 16 \
+    --max-new-tokens 128 \
     --thought-prob-coef 0.5 \
     --use-gae \
     --seed 1 \
