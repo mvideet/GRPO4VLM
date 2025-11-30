@@ -88,12 +88,17 @@ def get_action_only_prompt(env_name, infos=None):
     """
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze environment action-only prompt
-        qs = "You are navigating a maze. You can see the maze layout in the image. "
-        qs = qs + "The green circle represents your current position, and the red circle represents the goal. "
-        qs = qs + "Your goal is to navigate from your current position to the goal by choosing the correct direction. "
-        qs = qs + "You can choose between the following actions: ['up', 'down', 'left', 'right']. "
-        qs = qs + "Your response should be a valid json file in the following format: \n{\n"
-        qs = qs + "\"action\": \"up\" or \"down\" or \"left\" or \"right\" \n}"
+        qs = (
+            "You are navigating a maze. You can see the maze layout in the image. "
+            "The green circle represents your current position, and the red circle represents the goal. "
+            "Your goal is to choose the next step. "
+            "You can choose between the following actions: ['N', 'S', 'E', 'W'], "
+            "where N=up, S=down, E=right, W=left. "
+            "Your response should be a valid JSON object in the following format:\n"
+            "{\n"
+            '  "action": "N" or "S" or "E" or "W"\n'
+            "}"
+        )
         return qs
     elif env_name == 'gym_cards/NumberLine-v0':
         qs = "You are playing a game called number line. You will see a target number and a current number in the image. "
@@ -140,7 +145,7 @@ def text_projection(text_actions: List[str], env_name):
     output_indices = []
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze actions: up=0, right=1, down=2, left=3 (standard gym-maze convention)
-        action_list = ["N", "S", "E", "W"]
+        action_list = ["n", "s", "e", "w"]
     elif env_name == 'gym_cards/NumberLine-v0':
         action_list = ["-", "+"]
     elif env_name == 'gym_cards/Blackjack-v0':
@@ -160,7 +165,8 @@ def text_projection(text_actions: List[str], env_name):
             continue
         string = string.lower()
         action_index = string.find('"action":')
-        string = string[action_index:]
+        if action_index != -1:
+            string = string[action_index:]
         contained_actions = []
         # For the 'gym_cards/Points24-v0' environment, handle '10' separately
         if 'points' in env_name.lower() and '10' in string:
