@@ -103,7 +103,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return img_array
     
     def reset(self, **kwargs):
-        result = self.env.reset(**kwargs)
+        result = self.env.reset()
         if isinstance(result, tuple) and len(result) == 2:
             obs, info = result
         else:
@@ -275,7 +275,7 @@ class DenseRewardWrapper(gym.Wrapper):
                 self.maze_size = (5, 5)  # default
     
     def reset(self, **kwargs):
-        result = self.env.reset(**kwargs)
+        result = self.env.reset()
         if isinstance(result, tuple) and len(result) == 2:
             obs, info = result
         else:
