@@ -103,26 +103,30 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return img_array
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset()
+        result = self.env.reset(**kwargs)
+        if isinstance(result, tuple) and len(result) == 2:
+            obs, info = result
+        else:
+            obs, info = result, {}
+
         self.visited_cells = set()
-        
-        # Extract agent and goal positions
         agent_pos = self._extract_agent_position(obs, info)
         goal_pos = self._extract_goal_position(obs, info)
-        
-        # Add starting position to visited
         if agent_pos is not None:
             self.visited_cells.add(tuple(agent_pos))
-        
-        # Render maze image
+
+        # Render maze image (handles None safely if you applied previous fixes)
         visual_obs = self._render_maze_image(agent_pos, goal_pos)
-        
-        # Store positions in info for reward computation
-        info['agent_pos'] = agent_pos
-        info['goal_pos'] = goal_pos
-        info['previous_pos'] = agent_pos
-        
-        return visual_obs, info
+        if isinstance(info, dict):
+            info_out = dict(info)
+        else:
+            info_out = {}
+
+        info_out['agent_pos'] = agent_pos
+        info_out['goal_pos'] = goal_pos
+        info_out['previous_pos'] = agent_pos
+
+        return visual_obs, info_out
     
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
@@ -271,7 +275,11 @@ class DenseRewardWrapper(gym.Wrapper):
                 self.maze_size = (5, 5)  # default
     
     def reset(self, **kwargs):
-        obs, info = self.env.reset()
+        result = self.env.reset(**kwargs)
+        if isinstance(result, tuple) and len(result) == 2:
+            obs, info = result
+        else:
+            obs, info = result, {}
         
         # Handle vectorized environments (info is a list)
         if isinstance(info, list) and len(info) > 0:
@@ -329,6 +337,8 @@ class DenseRewardWrapper(gym.Wrapper):
         elif isinstance(info, dict):
             info['previous_pos'] = self.previous_pos
             info['goal_pos'] = self.goal_pos
+        else:
+            info = {'previous_pos': self.previous_pos, 'goal_pos': self.goal_pos}
         
         return obs, info
     
