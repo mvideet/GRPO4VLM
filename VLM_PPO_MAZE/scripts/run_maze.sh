@@ -26,6 +26,6 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0,1" accelerate launch --conf
     --wandb-project VLM_GRPO \
     --wandb-run MAZE_PPO_SFT \
     --use-wandb \
-    # --q4
+    --q4
 
 
