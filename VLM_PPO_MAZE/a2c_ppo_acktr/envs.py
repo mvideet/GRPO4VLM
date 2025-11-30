@@ -39,7 +39,12 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False, maz
             
         # Apply maze-specific wrappers if it's a maze environment
         if 'maze' in env_id.lower() or 'gym_maze' in env_id.lower():
-            from a2c_ppo_acktr.maze_utils import MazeVisualizationWrapper, DenseRewardWrapper
+            from a2c_ppo_acktr.maze_utils import (
+                MazeVisualizationWrapper, 
+                DenseRewardWrapper,
+                MazeActionWrapper,
+            )
+            env = MazeActionWrapper(env)
             # First apply dense reward wrapper with maze_size
             env = DenseRewardWrapper(env, maze_size=maze_size)
             # Then apply visualization wrapper with optional size override
