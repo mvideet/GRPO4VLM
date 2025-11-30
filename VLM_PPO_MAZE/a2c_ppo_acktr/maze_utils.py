@@ -146,7 +146,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return visual_obs, info_out
     
     def step(self, action):
-        obs, reward, terminated, truncated, info = self.env.step(action)
+        obs, reward, terminated, info = self.env.step(action)
         
         # Extract positions
         agent_pos = self._extract_agent_position(obs, info)
@@ -165,7 +165,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         info['goal_pos'] = goal_pos
         info['previous_pos'] = agent_pos
         
-        return visual_obs, reward, terminated, truncated, info
+        return visual_obs, reward, terminated, info
     
     def _extract_agent_position(self, obs, info):
         """Extract agent position from observation or info."""
@@ -360,7 +360,7 @@ class DenseRewardWrapper(gym.Wrapper):
         return obs, info
     
     def step(self, action):
-        obs, reward, terminated, truncated, info = self.env.step(action)
+        obs, reward, terminated, info = self.env.step(action)
         
         # Handle vectorized environments
         if isinstance(info, list):
@@ -406,7 +406,7 @@ class DenseRewardWrapper(gym.Wrapper):
             elif isinstance(reward, np.ndarray) and reward.ndim == 0:
                 reward = np.array([reward])
             
-            return obs, dense_reward, terminated, truncated, info
+            return obs, dense_reward, terminated, info
         else:
             # Single environment
             info_dict = info if isinstance(info, dict) else {}
@@ -439,5 +439,5 @@ class DenseRewardWrapper(gym.Wrapper):
                 info['goal_pos'] = self.goal_pos
                 info['previous_pos'] = self.previous_pos
             
-            return obs, dense_reward, terminated, truncated, info
+            return obs, dense_reward, terminated, info
 
