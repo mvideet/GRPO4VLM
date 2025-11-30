@@ -12,36 +12,20 @@ def _unwrap_env(env):
 
 
 class MazeActionWrapper(gym.ActionWrapper):
-    """
-    Convert discrete integer actions (0,1,2,3) from the RL algo
-    into compass directions ('N','S','E','W') expected by MazeView2D.
-    """
     def __init__(self, env):
         super().__init__(env)
-        # Map indices to directions – adjust if your env uses a different order
-        self._action_map = {
-            0: 'N',
-            1: 'S',
-            2: 'E',
-            3: 'W',
-        }
+        self._action_map = {0: 'N', 1: 'S', 2: 'E', 3: 'W'}
+        self.action_space = gym.spaces.Discrete(4)
 
     def action(self, action):
-        """
-        This is called by ActionWrapper before env.step(action).
-        We take the scalar int (or 0-d array) and return a direction string.
-        """
-        # SB3 often passes numpy scalar or 0-d array
         if isinstance(action, np.ndarray):
             action = int(action.item())
         else:
             action = int(action)
-
-        if action not in self._action_map:
-            # Optional: safety check
-            raise ValueError(f"Invalid discrete action {action}, expected 0-3")
-
         return self._action_map[action]
+
+    def reset(self, **kwargs):
+        return self.env.reset()
 
 
 class MazeVisualizationWrapper(gym.Wrapper):
