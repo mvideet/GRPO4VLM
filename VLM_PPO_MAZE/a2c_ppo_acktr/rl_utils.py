@@ -17,11 +17,11 @@ def get_prompt(env_name, action_only=False, infos=None):
             "You need to solve the entire maze in one shot without getting stuck. "
             "First, think step-by-step about the complete path you will take. "
             "After you have finished thinking, output the full trajectory as a sequence of actions. "
-            "You can choose between the four directions: ['up', 'down', 'left', 'right']. "
+            "You can choose between the four directions: ['N', 'S', 'E', 'W']. "
             "Your response MUST be a valid JSON object in the following format:\n"
             "{\n"
             '  "thoughts": "{first think carefully through the full path you will take}",\n'
-            '  "actions": ["up", "right", "right", "..."]\n'
+            '  "actions": ["N", "S", "E", "..."]\n'
             "}"
         )
         return qs
