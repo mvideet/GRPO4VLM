@@ -14,18 +14,62 @@ def _unwrap_env(env):
 class MazeActionWrapper(gym.ActionWrapper):
     def __init__(self, env):
         super().__init__(env)
-        self._action_map = {0: 'N', 1: 'S', 2: 'E', 3: 'W'}
+        # We want 4 discrete actions for the agent/policy:
+        # 0 -> 'N', 1 -> 'S', 2 -> 'E', 3 -> 'W'
+        self._action_map = {0: "N", 1: "S", 2: "E", 3: "W"}
         self.action_space = gym.spaces.Discrete(4)
 
-    def action(self, action):
-        if isinstance(action, np.ndarray):
-            action = int(action.item())
-        else:
-            action = int(action)
-        return self._action_map[action]
+    def _base_env(self):
+        base = self.env
+        while hasattr(base, "env"):
+            base = base.env
+        return base
 
     def reset(self, **kwargs):
-        return self.env.reset()
+        base = self._base_env()
+        result = base.reset()  # MazeEnv.reset() -> obs (np.array shape (2,))
+
+        # New-style API is (obs, info)
+        obs = result
+        info = {}
+        return obs, info
+
+    def step(self, action):
+        """
+        Convert:
+          - integer / numpy action -> 'N'/'S'/'E'/'W'
+          - old 4-tuple step output -> new 5-tuple (terminated/truncated)
+        and bypass TimeLimit so we don't hit the 4-vs-5 tuple mismatch.
+        """
+        # Convert to a plain Python int
+        if isinstance(action, np.ndarray):
+            action_idx = int(action.item())
+        else:
+            action_idx = int(action)
+
+        # Map index to direction expected by MazeEnv
+        direction = self._action_map.get(action_idx, "N")
+
+        # Call underlying MazeEnv directly, bypassing TimeLimit, EnvChecker, etc.
+        base = self._base_env()
+        result = base.step(direction)
+        # MazeEnv.step() -> (state, reward, done, info)
+        if isinstance(result, tuple) and len(result) == 4:
+            obs, reward, done, info = result
+            terminated = bool(done)
+            truncated = False
+        elif isinstance(result, tuple) and len(result) == 5:
+            # Just in case something downstream already returns 5 elements
+            obs, reward, terminated, truncated, info = result
+        else:
+            raise RuntimeError(
+                f"Unexpected MazeEnv.step output: {type(result)} with len="
+                f"{len(result) if isinstance(result, tuple) else 'N/A'}"
+            )
+
+        # Return Gymnasium-style 5-tuple up to DenseRewardWrapper / MazeVisualizationWrapper
+        return obs, reward, terminated, truncated, info
+
 
 
 class MazeVisualizationWrapper(gym.Wrapper):
@@ -146,7 +190,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         return visual_obs, info_out
     
     def step(self, action):
-        obs, reward, terminated, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
         
         # Extract positions
         agent_pos = self._extract_agent_position(obs, info)
@@ -165,7 +209,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
         info['goal_pos'] = goal_pos
         info['previous_pos'] = agent_pos
         
-        return visual_obs, reward, terminated, info
+        return visual_obs, reward, terminated, truncated, info
     
     def _extract_agent_position(self, obs, info):
         """Extract agent position from observation or info."""
@@ -360,7 +404,7 @@ class DenseRewardWrapper(gym.Wrapper):
         return obs, info
     
     def step(self, action):
-        obs, reward, terminated, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
         
         # Handle vectorized environments
         if isinstance(info, list):
@@ -406,7 +450,7 @@ class DenseRewardWrapper(gym.Wrapper):
             elif isinstance(reward, np.ndarray) and reward.ndim == 0:
                 reward = np.array([reward])
             
-            return obs, dense_reward, terminated, info
+            return obs, dense_reward, terminated, truncated, info
         else:
             # Single environment
             info_dict = info if isinstance(info, dict) else {}
@@ -439,5 +483,5 @@ class DenseRewardWrapper(gym.Wrapper):
                 info['goal_pos'] = self.goal_pos
                 info['previous_pos'] = self.previous_pos
             
-            return obs, dense_reward, terminated, info
+            return obs, dense_reward, terminated, truncated, info
 
