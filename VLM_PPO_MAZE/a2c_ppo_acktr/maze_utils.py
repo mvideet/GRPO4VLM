@@ -294,24 +294,18 @@ class MazeVisualizationWrapper(gym.Wrapper):
 
 
 def compute_dense_reward(previous_pos, current_pos, goal_pos):
-    if previous_pos is None or current_pos is None or goal_pos is None:
+    if current_pos is None or goal_pos is None:
         return 0.0
     
     # Convert to numpy arrays for easier computation
-    prev_pos = np.array(previous_pos)
     curr_pos = np.array(current_pos)
     goal = np.array(goal_pos)
     
-    # Compute euclidean distances
-    prev_distance = np.linalg.norm(prev_pos - goal)
+    # Compute euclidean distance from goal
     curr_distance = np.linalg.norm(curr_pos - goal)
     
-    # Reward is the reduction in distance
-    reward = prev_distance - curr_distance
-    
-    # Optional: Add small bonus for reaching goal
-    if curr_distance < 0.5:  # Very close to goal
-        reward += 1.0
+    # Reward is negative of distance (minimize distance = maximize reward)
+    reward = -curr_distance
     
     return float(reward)
 
@@ -429,9 +423,9 @@ class DenseRewardWrapper(gym.Wrapper):
             if current_pos is None:
                 current_pos = self.previous_pos
             
-            # Compute dense reward
+            # Compute dense reward (negative euclidean distance from goal)
             dense_reward = compute_dense_reward(
-                self.previous_pos, current_pos, self.goal_pos
+                None, current_pos, self.goal_pos
             )
             
             # Update previous position
@@ -469,9 +463,9 @@ class DenseRewardWrapper(gym.Wrapper):
             if current_pos is None:
                 current_pos = self.previous_pos
             
-            # Compute dense reward
+            # Compute dense reward (negative euclidean distance from goal)
             dense_reward = compute_dense_reward(
-                self.previous_pos, current_pos, self.goal_pos
+                None, current_pos, self.goal_pos
             )
             
             # Update previous position
