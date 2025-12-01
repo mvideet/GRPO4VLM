@@ -14,7 +14,7 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config
     --temperature 0.2 \
     --ppo-epoch 4 \
     --mini-batch-size 1 \
-    --model-path liuhaotian/llava-v1.6-mistral-7b \
+    --model-path mvideet1/llava-mistral-7b-finetuned \
     --use-lora \
     --train-vision all \
     --use-curriculum \
