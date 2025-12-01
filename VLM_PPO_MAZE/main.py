@@ -332,7 +332,20 @@ def main():
                 if d:
                     episode_reward = running_episode_rewards[i].item()
                     episode_rewards.append(episode_reward)
-                    is_success = episode_reward > 0
+                    
+                    # Check if agent reached goal by comparing positions
+                    info = infos[i] if isinstance(infos, list) else infos
+                    agent_pos = info.get('agent_pos') if isinstance(info, dict) else None
+                    goal_pos = info.get('goal_pos') if isinstance(info, dict) else None
+                    
+                    if agent_pos is not None and goal_pos is not None:
+                        # Success if agent is at goal (within 0.5 units tolerance)
+                        distance = np.linalg.norm(np.array(agent_pos) - np.array(goal_pos))
+                        is_success = distance < 0.5
+                    else:
+                        # Fallback: check if episode ended with positive reward (goal reached)
+                        is_success = episode_reward > 0
+                    
                     if is_success:
                         episode_success_rate.append(1)
                     else:

@@ -304,6 +304,10 @@ def compute_dense_reward(previous_pos, current_pos, goal_pos):
     # Compute euclidean distance from goal
     curr_distance = np.linalg.norm(curr_pos - goal)
     
+    # Large positive reward for reaching goal (within 0.5 units)
+    if curr_distance < 0.5:
+        return 50.0
+    
     # Reward is negative of distance (minimize distance = maximize reward)
     reward = -curr_distance
     
