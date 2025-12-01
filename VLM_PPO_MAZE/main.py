@@ -206,8 +206,7 @@ def main():
             args.entropy_coef,
             max_grad_norm=args.max_grad_norm)
 
-    # For per-step updates, we use num_steps=1 in rollout storage
-    rollouts = RolloutStorage(1, args.num_processes,
+    rollouts = RolloutStorage(args.num_steps, args.num_processes,
                               envs.observation_space.shape, envs.action_space, args.max_new_tokens)
 
     _, output_ids, action, action_log_prob, action_tokens_log_prob = actor_critic.act(obs, INPUT_IDS = INPUT_IDS)
@@ -221,30 +220,38 @@ def main():
     episode_rewards = deque(maxlen=args.eval_num_per_episode)
     episode_success_rate = deque(maxlen=args.eval_num_per_episode)
     episode_action_tokens_log_prob = deque(maxlen=args.eval_num_per_episode)
+    
+    # Step-by-step metrics tracking (one action per step)
+    step_rewards = deque(maxlen=args.eval_num_per_episode * 100)  # Track individual step rewards
+    step_action_log_probs = deque(maxlen=args.eval_num_per_episode * 100)  # Track per-step action log probs
+    step_values = deque(maxlen=args.eval_num_per_episode * 100)  # Track per-step values
+    step_counts_per_episode = deque(maxlen=args.eval_num_per_episode)  # Track steps per episode
+    running_step_count = torch.zeros(args.num_processes).flatten()  # Track current step count per process
 
     start = time.time()
-    # For per-step updates, total steps = num_env_steps
-    total_steps = int(args.num_env_steps)
+    num_updates = int(
+        args.num_env_steps) // args.num_steps // args.num_processes
     if args.use_wandb:
         import wandb
         run_name = args.wandb_run + "-" + args.env_name
         wandb.init(project=args.wandb_project, name=run_name, group=run_name, config=args)
 
     print(qs)
+    print("=== Step-by-Step PPO Training: One action per environment step ===")
     running_episode_rewards = torch.zeros(args.num_processes).flatten()
 
+    num_explore = int(args.explore_portion*num_updates)
     prev_infos = []
     infos = []
     
     # Track curriculum progression
     last_curriculum_check = 0
-    curriculum_check_interval = 10 * args.num_steps  # Check every 10 * num_steps steps (equivalent to old 10 updates)
+    curriculum_check_interval = 10  # Check every 10 updates
     
-    step_count = 0
-    for j in tqdm(range(total_steps)):
+    for j in tqdm(range(num_updates)):
 
         # Check for curriculum progression
-        if curriculum is not None and (step_count - last_curriculum_check) >= curriculum_check_interval:
+        if curriculum is not None and (j - last_curriculum_check) >= curriculum_check_interval:
             curriculum_info = curriculum.get_progress_info()
             print(f"\n=== Curriculum Status ===")
             print(f"Current maze size: {curriculum_info['current_size']}x{curriculum_info['current_size']}")
@@ -289,56 +296,71 @@ def main():
                     
                     print(f"Environment updated successfully!")
             
-            last_curriculum_check = step_count
+            last_curriculum_check = j
 
-        # Per-step update: sample action, take step, update policy
-        # Sample actions
-        with torch.no_grad():
-            INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
-            INPUT_IDS[INPUT_IDS == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
-            value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
-                    rollouts.obs[0], INPUT_IDS = INPUT_IDS)
-        text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
-        prev_infos = copy.deepcopy(infos)
-        obs, reward, done, infos = envs.step(action)
+        for step in range(args.num_steps):
+            # Sample actions
+            with torch.no_grad():
+                INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
+                INPUT_IDS[INPUT_IDS == 0] = 259 # 869: . (period), 29871: SPIECE, 259: whitespace
+                value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
+                        rollouts.obs[step], INPUT_IDS = INPUT_IDS)
+            text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
+            prev_infos = copy.deepcopy(infos)
+            obs, reward, done, infos = envs.step(action)
 
-        # Use current environment name (may change with curriculum)
-        prompt_env_name = curriculum.get_current_env_name() if curriculum is not None else args.env_name
-        qs = get_prompt(prompt_env_name, args.action_only_prompt, infos)
-        qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
-        conv = conv_templates[args.conv_mode].copy()
-        conv.append_message(conv.roles[0], qs)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
-        masks = torch.FloatTensor(
-            [[0.0] if done_ else [1.0] for done_ in done])
+            # Use current environment name (may change with curriculum)
+            prompt_env_name = curriculum.get_current_env_name() if curriculum is not None else args.env_name
+            qs = get_prompt(prompt_env_name, args.action_only_prompt, infos)
+            qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
+            conv = conv_templates[args.conv_mode].copy()
+            conv.append_message(conv.roles[0], qs)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
+            masks = torch.FloatTensor(
+                [[0.0] if done_ else [1.0] for done_ in done])
 
-        running_episode_rewards += reward.flatten()
-        for i, d, r in zip(range(args.num_processes), done, reward):
-            if d:
-                episode_reward = running_episode_rewards[i].item()
-                episode_rewards.append(episode_reward)
-                is_success = episode_reward > 0
-                if is_success:
-                    episode_success_rate.append(1)
-                else:
-                    episode_success_rate.append(0)
-                episode_action_tokens_log_prob.append(action_tokens_log_prob[i].item())
-                running_episode_rewards[i] = 0
-                
-                # Record episode for curriculum learning
-                if curriculum is not None:
-                    curriculum.record_episode(is_success)
-        # bad_mask is a legacy implementation of the storage.py file
-        bad_masks = torch.FloatTensor(
-            [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
-        rollouts.insert(obs, output_id, action,
-                        action_log_prob, value, reward, masks, bad_masks)
-        
-        # Per-step update: compute returns and update policy
+            # Track step-by-step metrics (one action per step)
+            for i in range(args.num_processes):
+                step_rewards.append(reward[i].item())
+                step_action_log_probs.append(action_log_prob[i].item())
+                step_values.append(value[i].item())
+                running_step_count[i] += 1
+
+            running_episode_rewards += reward.flatten()
+            for i, d, r in zip(range(args.num_processes), done, reward):
+                if d:
+                    episode_reward = running_episode_rewards[i].item()
+                    episode_rewards.append(episode_reward)
+                    is_success = episode_reward > 0
+                    if is_success:
+                        episode_success_rate.append(1)
+                    else:
+                        episode_success_rate.append(0)
+                    episode_action_tokens_log_prob.append(action_tokens_log_prob[i].item())
+                    # Record step count for this episode
+                    step_counts_per_episode.append(running_step_count[i].item())
+                    running_episode_rewards[i] = 0
+                    running_step_count[i] = 0
+                    
+                    # Record episode for curriculum learning
+                    if curriculum is not None:
+                        curriculum.record_episode(is_success)
+            # bad_mask is a legacy implementation of the storage.py file
+            bad_masks = torch.FloatTensor(
+                [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
+            rollouts.insert(obs, output_id, action,
+                            action_log_prob, value, reward, masks, bad_masks)
+        print("****** iteration number:{} (Step-by-Step PPO: {} steps collected, one action per step) ******".format(j, args.num_steps))
+        print("prompt:{}".format(prompt))
+        print("text_action:{}".format(text_action))
+        print("current observation:{}".format(prev_infos))
+        print("ground truth:{}".format(infos))
+        print("action log prob:{}".format(action_log_prob))
+        print("action tokens log prob:{}".format(action_tokens_log_prob))
         with torch.no_grad():
             next_value = actor_critic.get_value(
-                rollouts.obs[-1], INPUT_IDS = INPUT_IDS).detach()
+                rollouts.obs[-1]).detach()
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
@@ -350,77 +372,86 @@ def main():
         # Record update for curriculum learning (if using updates criterion)
         if curriculum is not None and args.curriculum_progression == "updates":
             curriculum.record_update()
-        
-        step_count += args.num_processes
-        
-        # Log per step (every log_interval steps)
-        if step_count % args.log_interval == 0:
-            total_num_steps = step_count
+        if len(episode_rewards) > 1:
+            total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
 
-            if len(episode_rewards) > 0:
-                print(
-                    "Step {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}, success_rate {:.2f}\n"
-                    .format(step_count, total_num_steps,
-                            int(total_num_steps / (end - start)),
-                            len(episode_rewards), np.mean(episode_rewards),
-                            np.median(episode_rewards), np.min(episode_rewards),
-                            np.max(episode_rewards), np.mean(episode_success_rate),
-                            dist_entropy, value_loss, action_loss))
-            
+            avg_steps_per_episode = np.mean(step_counts_per_episode) if len(step_counts_per_episode) > 0 else 0.0
+            print(
+                "Updates {}, num timesteps {}, FPS {} \n"
+                "Step-by-Step PPO: Last {} training episodes: mean/median reward {:.2f}/{:.2f}, min/max reward {:.2f}/{:.2f}, success_rate {:.2f}, avg steps/episode {:.1f}\n"
+                "Step-level metrics: mean step reward {:.4f}, mean step value {:.4f}, mean step action_log_prob {:.4f}\n"
+                .format(j, total_num_steps,
+                        int(total_num_steps / (end - start)),
+                        len(episode_rewards), np.mean(episode_rewards),
+                        np.median(episode_rewards), np.min(episode_rewards),
+                        np.max(episode_rewards), np.mean(episode_success_rate),
+                        avg_steps_per_episode,
+                        np.mean(step_rewards) if len(step_rewards) > 0 else 0.0,
+                        np.mean(step_values) if len(step_values) > 0 else 0.0,
+                        np.mean(step_action_log_probs) if len(step_action_log_probs) > 0 else 0.0))
             if args.use_wandb:
-                log_dict = {
-                    "step": step_count,
-                    "num_timesteps": total_num_steps,
-                    "FPS": int(total_num_steps / (end - start)) if (end - start) > 0 else 0,
-                    "value.loss": value_loss,
-                    "action.loss": action_loss,
-                    "distribution_entropy": dist_entropy,
-                    "reward.step": reward.mean().item() if isinstance(reward, torch.Tensor) else reward,
-                    "return.step": rollouts.returns[0].mean().item(),
-                    "value.step": rollouts.value_preds[0].mean().item(),
+                # Step-by-step metrics (one action per step)
+                step_metrics = {
+                    "step.reward.mean": np.mean(step_rewards) if len(step_rewards) > 0 else 0.0,
+                    "step.reward.std": np.std(step_rewards) if len(step_rewards) > 0 else 0.0,
+                    "step.action_log_prob.mean": np.mean(step_action_log_probs) if len(step_action_log_probs) > 0 else 0.0,
+                    "step.value.mean": np.mean(step_values) if len(step_values) > 0 else 0.0,
+                    "step.value.std": np.std(step_values) if len(step_values) > 0 else 0.0,
+                    "step.count_per_episode.mean": np.mean(step_counts_per_episode) if len(step_counts_per_episode) > 0 else 0.0,
                 }
                 
-                if len(episode_rewards) > 0:
-                    log_dict.update({
-                        "episode_reward.mean": np.mean(episode_rewards),
-                        "episode_reward.median": np.median(episode_rewards),
-                        "episode_reward.min": np.min(episode_rewards),
-                        "episode_reward.max": np.max(episode_rewards),
-                        "episode_success_rate.mean": np.mean(episode_success_rate),
-                        "episode_action_tokens_log_prob.mean": np.mean(episode_action_tokens_log_prob),
-                    })
+                # Rollout-level step metrics (from current rollout)
+                rollout_step_metrics = {
+                    "rollout.step.reward.max": rollouts.rewards.max().item(),
+                    "rollout.step.reward.min": rollouts.rewards.min().item(),
+                    "rollout.step.reward.mean": rollouts.rewards.mean().item(),
+                    "rollout.step.reward.std": rollouts.rewards.std().item(),
+                    "rollout.step.reward.median": rollouts.rewards.median().item(),
+                    "rollout.step.return.max": rollouts.returns[:-1].max().item(),
+                    "rollout.step.return.min": rollouts.returns[:-1].min().item(),
+                    "rollout.step.return.mean": rollouts.returns[:-1].mean().item(),
+                    "rollout.step.return.std": rollouts.returns[:-1].std().item(),
+                    "rollout.step.value.max": rollouts.value_preds[:-1].max().item(),
+                    "rollout.step.value.min": rollouts.value_preds[:-1].min().item(),
+                    "rollout.step.value.mean": rollouts.value_preds[:-1].mean().item(),
+                    "rollout.step.value.std": rollouts.value_preds[:-1].std().item(),
+                    "rollout.step.action_log_prob.mean": rollouts.action_log_probs.mean().item(),
+                    "rollout.step.action_log_prob.std": rollouts.action_log_probs.std().item(),
+                }
                 
-                # Add rollout statistics (for single step)
-                log_dict.update({
-                    "reward.max": rollouts.rewards.max().item(),
-                    "reward.min": rollouts.rewards.min().item(),
-                    "reward.mean": rollouts.rewards.mean().item(),
-                    "reward.std": rollouts.rewards.std().item(),
-                    "reward.median": rollouts.rewards.median().item(),
-                    "return.max": rollouts.returns.max().item(),
-                    "return.min": rollouts.returns.min().item(),
-                    "return.mean": rollouts.returns.mean().item(),
-                    "return.std": rollouts.returns.std().item(),
-                    "value.max": rollouts.value_preds.max().item(),
-                    "value.min": rollouts.value_preds.min().item(),
-                    "value.mean": rollouts.value_preds.mean().item(),
-                    "value.std": rollouts.value_preds.std().item(),
-                })
+                # Episode-level metrics (aggregated from completed episodes)
+                episode_metrics = {
+                    "episode.reward.mean": np.mean(episode_rewards),
+                    "episode.reward.median": np.median(episode_rewards),
+                    "episode.reward.min": np.min(episode_rewards),
+                    "episode.reward.max": np.max(episode_rewards),
+                    "episode.success_rate.mean": np.mean(episode_success_rate),
+                    "episode.action_tokens_log_prob.mean": np.mean(episode_action_tokens_log_prob),
+                }
                 
-                wandb.log(log_dict)
+                # Training metrics
+                training_metrics = {
+                    "iteration": j,
+                    "num_timesteps": total_num_steps,
+                    "FPS": int(total_num_steps / (end - start)),
+                    "distribution_entropy": dist_entropy,
+                    "value.loss": value_loss,
+                    "action.loss": action_loss,
+                }
+                
+                wandb.log({**step_metrics, **rollout_step_metrics, **episode_metrics, **training_metrics})
             
             # Log curriculum information
             if curriculum is not None:
                 curriculum_info = curriculum.get_progress_info()
-                if args.use_wandb:
-                    wandb.log({
-                        "curriculum.current_size": curriculum_info['current_size'],
-                        "curriculum.progress_percentage": curriculum_info['progress_percentage'],
-                        "curriculum.current_success_rate": curriculum_info['current_success_rate'],
-                        "curriculum.episode_count": curriculum_info['episode_count'],
-                        "curriculum.update_count": curriculum_info['update_count'],
-                    })
+                wandb.log({
+                    "curriculum.current_size": curriculum_info['current_size'],
+                    "curriculum.progress_percentage": curriculum_info['progress_percentage'],
+                    "curriculum.current_success_rate": curriculum_info['current_success_rate'],
+                    "curriculum.episode_count": curriculum_info['episode_count'],
+                    "curriculum.update_count": curriculum_info['update_count'],
+                })
 
 if __name__ == "__main__":
     main()
