@@ -18,15 +18,15 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config
     --model-path mvideet1/llava-mistral-7b-finetuned \
     --use-lora \
     --train-vision all \
+    --wandb-project VLM_GRPO \
+    --wandb-run MAZE_PPO_SFT \
+    --use-wandb \
     # --use-curriculum \
     # --curriculum-start-size 5 \
     #--curriculum-end-size 100 \
     #--curriculum-progression success_rate \
     #--curriculum-success-threshold 0.7 \
     #--curriculum-min-episodes 100 \
-    --wandb-project VLM_GRPO \
-    --wandb-run MAZE_PPO_SFT \
-    --use-wandb \
     # --q4
 
 
