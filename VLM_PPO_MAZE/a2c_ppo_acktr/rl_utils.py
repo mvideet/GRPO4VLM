@@ -12,17 +12,20 @@ def get_prompt(env_name, action_only=False, infos=None):
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze environment prompt
         qs = (
-            "You are an extremely smart maze solver. You are observing a top-down view of the maze. "
-            "Your goal is to move from the current start position to the goal position, which is shown as a red square. "
-            "You need to solve the entire maze in one shot without getting stuck. "
-            "First, think step-by-step about the complete path you will take. "
-            "After you have finished thinking, output the full trajectory as a sequence of actions. "
-            "You can choose between the four directions: ['N', 'S', 'E', 'W']. "
-            "Your response MUST be a valid JSON object in the following format:\n"
+            "You are an extremely smart maze solver. You see a top-down view of the maze. "
+            "The green marker is your CURRENT position. The red marker is the GOAL. "
+            "At this time step you must choose EXACTLY ONE next move for the agent, "
+            "NOT the entire path. Do NOT plan or output a full trajectory. "
+            "You are doing step-by-step decision making: on each call you output only the NEXT move.\n\n"
+            "You can choose between four directions: ['N', 'S', 'E', 'W'], "
+            "where N = move up, S = move down, E = move right, W = move left.\n\n"
+            "Your response MUST be a valid JSON object with EXACTLY ONE action, in the following format:\n"
             "{\n"
-            '  "thoughts": "{first think carefully through the full path you will take}",\n'
-            '  "actions": ["N", "S", "E", "..."]\n'
-            "}"
+            '  "thoughts": "briefly think about the BEST next move only (do NOT describe multiple steps)",\n'
+            '  "action": "N" or "S" or "E" or "W"\n'
+            "}\n"
+            "NEVER output a list of actions. NEVER output more than one action. "
+            "If you are unsure, still choose exactly one of ['N', 'S', 'E', 'W']."  # extra hammer
         )
         return qs
     elif env_name == 'gym_cards/NumberLine-v0':
@@ -89,15 +92,16 @@ def get_action_only_prompt(env_name, infos=None):
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
         # Maze environment action-only prompt
         qs = (
-            "You are navigating a maze. You can see the maze layout in the image. "
-            "The green circle represents your current position, and the red circle represents the goal. "
-            "Your goal is to choose the next step. "
+            "You are navigating a maze. You see the maze layout in the image. "
+            "The green circle is your current position, and the red circle is the goal. "
+            "Right now you must choose ONLY THE NEXT SINGLE MOVE, not a full path. "
             "You can choose between the following actions: ['N', 'S', 'E', 'W'], "
-            "where N=up, S=down, E=right, W=left. "
-            "Your response should be a valid JSON object in the following format:\n"
+            "where N=up, S=down, E=right, W=left.\n"
+            "Your response MUST be a valid JSON object with exactly one action, in the format:\n"
             "{\n"
             '  "action": "N" or "S" or "E" or "W"\n'
-            "}"
+            "}\n"
+            "Do not output multiple actions. Do not output a list or sequence. Output exactly one action."
         )
         return qs
     elif env_name == 'gym_cards/NumberLine-v0':
