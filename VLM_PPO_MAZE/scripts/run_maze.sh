@@ -1,5 +1,5 @@
 TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config_file config_zero2.yaml --main_process_port 29380 ../main.py \
-    --env-name maze-random-5x5-v0 \
+    --env-name custom-maze-5x5 \
     --init-lr 1e-5 \
     --end-lr 1e-9 \
     --lr_max_steps 25 \

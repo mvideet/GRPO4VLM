@@ -16,8 +16,20 @@ class MazeActionWrapper(gym.ActionWrapper):
         super().__init__(env)
         # We want 4 discrete actions for the agent/policy:
         # 0 -> 'N', 1 -> 'S', 2 -> 'E', 3 -> 'W'
-        self._action_map = {0: "N", 1: "S", 2: "E", 3: "W"}
         self.action_space = gym.spaces.Discrete(4)
+        # Check if this is a custom maze env (uses integer actions directly)
+        self._is_custom_maze = self._check_custom_maze()
+
+    def _check_custom_maze(self):
+        """Check if wrapped env is CustomMazeEnv."""
+        env = self.env
+        while hasattr(env, 'env'):
+            if hasattr(env, '__class__') and 'CustomMazeEnv' in str(env.__class__):
+                return True
+            env = env.env
+        if hasattr(env, '__class__') and 'CustomMazeEnv' in str(env.__class__):
+            return True
+        return False
 
     def _base_env(self):
         base = self.env
@@ -27,19 +39,17 @@ class MazeActionWrapper(gym.ActionWrapper):
 
     def reset(self, **kwargs):
         base = self._base_env()
-        result = base.reset()  # MazeEnv.reset() -> obs (np.array shape (2,))
-
-        # New-style API is (obs, info)
-        obs = result
-        info = {}
-        return obs, info
+        result = base.reset(**kwargs)
+        
+        # CustomMazeEnv already returns (obs, info) tuple
+        if isinstance(result, tuple) and len(result) == 2:
+            return result
+        # Old gym-maze format
+        return result, {}
 
     def step(self, action):
         """
-        Convert:
-          - integer / numpy action -> 'N'/'S'/'E'/'W'
-          - old 4-tuple step output -> new 5-tuple (terminated/truncated)
-        and bypass TimeLimit so we don't hit the 4-vs-5 tuple mismatch.
+        Handle actions for both CustomMazeEnv (integer) and gym-maze (string).
         """
         # Convert to a plain Python int
         if isinstance(action, np.ndarray):
@@ -47,27 +57,36 @@ class MazeActionWrapper(gym.ActionWrapper):
         else:
             action_idx = int(action)
 
-        # Map index to direction expected by MazeEnv
-        direction = self._action_map.get(action_idx, "N")
-
-        # Call underlying MazeEnv directly, bypassing TimeLimit, EnvChecker, etc.
         base = self._base_env()
+        
+        # CustomMazeEnv uses integer actions directly
+        if self._is_custom_maze:
+            result = base.step(action_idx)
+            # CustomMazeEnv returns 5-tuple: (obs, reward, terminated, truncated, info)
+            if isinstance(result, tuple) and len(result) == 5:
+                return result
+            elif isinstance(result, tuple) and len(result) == 4:
+                obs, reward, done, info = result
+                return obs, reward, bool(done), False, info
+        
+        # Old gym-maze format: convert to string direction
+        direction_map = {0: "N", 1: "S", 2: "E", 3: "W"}
+        direction = direction_map.get(action_idx, "N")
         result = base.step(direction)
-        # MazeEnv.step() -> (state, reward, done, info)
+        
+        # Handle old 4-tuple format
         if isinstance(result, tuple) and len(result) == 4:
             obs, reward, done, info = result
             terminated = bool(done)
             truncated = False
         elif isinstance(result, tuple) and len(result) == 5:
-            # Just in case something downstream already returns 5 elements
             obs, reward, terminated, truncated, info = result
         else:
             raise RuntimeError(
-                f"Unexpected MazeEnv.step output: {type(result)} with len="
+                f"Unexpected step output: {type(result)} with len="
                 f"{len(result) if isinstance(result, tuple) else 'N/A'}"
             )
 
-        # Return Gymnasium-style 5-tuple up to DenseRewardWrapper / MazeVisualizationWrapper
         return obs, reward, terminated, truncated, info
 
 
@@ -118,17 +137,51 @@ class MazeVisualizationWrapper(gym.Wrapper):
         
         img = Image.new('RGB', (width, height), color=self.path_color)
         draw = ImageDraw.Draw(img)
-        maze_structure = self._get_maze_structure()
-        if maze_structure is not None:
-            for i in range(self.maze_size[0]):
-                for j in range(self.maze_size[1]):
-                    x1 = j * self.cell_size
-                    y1 = i * self.cell_size
-                    x2 = x1 + self.cell_size
-                    y2 = y1 + self.cell_size
-                    if maze_structure[i][j] == 1: 
-                        draw.rectangle([x1, y1, x2, y2], fill=self.wall_color)
         
+        # Try to get maze grid (bitmask format) from custom maze env
+        maze_grid = self._get_maze_grid()
+        
+        if maze_grid is not None:
+            # Render walls from bitmask format (like generate_maze_images.py)
+            # Bitmask constants
+            N, S, E, W = 1, 2, 4, 8
+            wall_thickness = 2  # Thin walls like in the example
+            
+            for y in range(self.maze_size[0]):
+                for x in range(self.maze_size[1]):
+                    cell = maze_grid[y][x]
+                    x0 = x * self.cell_size
+                    y0 = y * self.cell_size
+                    x1 = x0 + self.cell_size
+                    y1 = y0 + self.cell_size
+                    
+                    # Draw walls based on bitmask
+                    if cell & N:
+                        draw.line((x0, y0, x1, y0), fill=self.wall_color, width=wall_thickness)
+                    if cell & S:
+                        draw.line((x0, y1, x1, y1), fill=self.wall_color, width=wall_thickness)
+                    if cell & W:
+                        draw.line((x0, y0, x0, y1), fill=self.wall_color, width=wall_thickness)
+                    if cell & E:
+                        draw.line((x1, y0, x1, y1), fill=self.wall_color, width=wall_thickness)
+        else:
+            # Fallback: try old maze_structure format (for compatibility)
+            maze_structure = self._get_maze_structure()
+            if maze_structure is not None:
+                try:
+                    maze_arr = np.array(maze_structure)
+                    for i in range(self.maze_size[0]):
+                        for j in range(self.maze_size[1]):
+                            x1 = j * self.cell_size
+                            y1 = i * self.cell_size
+                            x2 = x1 + self.cell_size
+                            y2 = y1 + self.cell_size
+                            if maze_arr[i][j] == 1: 
+                                draw.rectangle([x1, y1, x2, y2], fill=self.wall_color)
+                except Exception as e:
+                    pass
+        
+        # Draw visited cells
         for (row, col) in self.visited_cells:
             x1 = col * self.cell_size
             y1 = row * self.cell_size
@@ -136,22 +189,7 @@ class MazeVisualizationWrapper(gym.Wrapper):
             y2 = y1 + self.cell_size
             draw.rectangle([x1, y1, x2, y2], fill=self.visited_color)
         
-        goal_x1 = goal_pos[1] * self.cell_size
-        goal_y1 = goal_pos[0] * self.cell_size
-        goal_x2 = goal_x1 + self.cell_size
-        goal_y2 = goal_y1 + self.cell_size
-        draw.ellipse([goal_x1 + 5, goal_y1 + 5, goal_x2 - 5, goal_y2 - 5], 
-                    fill=self.goal_color)
-        
-        # Draw agent
-        agent_x1 = agent_pos[1] * self.cell_size
-        agent_y1 = agent_pos[0] * self.cell_size
-        agent_x2 = agent_x1 + self.cell_size
-        agent_y2 = agent_y1 + self.cell_size
-        draw.ellipse([agent_x1 + 5, agent_y1 + 5, agent_x2 - 5, agent_y2 - 5], 
-                    fill=self.agent_color)
-        
-        # Draw grid lines
+        # Draw grid lines (light gray, thin)
         for i in range(self.maze_size[0] + 1):
             y = i * self.cell_size
             draw.line([(0, y), (width, y)], fill=(128, 128, 128), width=1)
@@ -159,12 +197,51 @@ class MazeVisualizationWrapper(gym.Wrapper):
             x = j * self.cell_size
             draw.line([(x, 0), (x, height)], fill=(128, 128, 128), width=1)
         
+        # Draw goal (red circle) at bottom-right
+        goal_x1 = goal_pos[1] * self.cell_size + 5
+        goal_y1 = goal_pos[0] * self.cell_size + 5
+        goal_x2 = goal_x1 + self.cell_size - 10
+        goal_y2 = goal_y1 + self.cell_size - 10
+        draw.ellipse([goal_x1, goal_y1, goal_x2, goal_y2], fill=self.goal_color)
+        
+        # Draw agent (green circle) at current position
+        agent_x1 = agent_pos[1] * self.cell_size + 5
+        agent_y1 = agent_pos[0] * self.cell_size + 5
+        agent_x2 = agent_x1 + self.cell_size - 10
+        agent_y2 = agent_y1 + self.cell_size - 10
+        draw.ellipse([agent_x1, agent_y1, agent_x2, agent_y2], fill=self.agent_color)
+        
         # Convert to numpy array
         img_array = np.array(img)
         return img_array
     
+    def _get_maze_grid(self):
+        """Get maze grid in bitmask format from custom maze env."""
+        # Check cached grid from reset
+        if hasattr(self, '_cached_maze_grid'):
+            return self._cached_maze_grid
+        
+        # Try to get from wrapped environment
+        env = self.env
+        while hasattr(env, 'env'):
+            if hasattr(env, 'get_maze_grid'):
+                grid = env.get_maze_grid()
+                if grid is not None:
+                    return grid
+            env = env.env
+        
+        # Try direct access
+        if hasattr(env, 'get_maze_grid'):
+            grid = env.get_maze_grid()
+            if grid is not None:
+                return grid
+        if hasattr(env, 'maze_grid'):
+            return env.maze_grid
+        
+        return None
+    
     def reset(self, **kwargs):
-        result = self.env.reset()
+        result = self.env.reset(**kwargs)
         if isinstance(result, tuple) and len(result) == 2:
             obs, info = result
         else:
@@ -175,8 +252,18 @@ class MazeVisualizationWrapper(gym.Wrapper):
         goal_pos = self._extract_goal_position(obs, info)
         if agent_pos is not None:
             self.visited_cells.add(tuple(agent_pos))
+        
+        # Store maze grid reference if available
+        if isinstance(info, dict) and 'maze_grid' in info:
+            self._cached_maze_grid = info['maze_grid']
+        
+        # Also try to get from environment directly
+        if not hasattr(self, '_cached_maze_grid'):
+            maze_grid = self._get_maze_grid()
+            if maze_grid is not None:
+                self._cached_maze_grid = maze_grid
 
-        # Render maze image (handles None safely if you applied previous fixes)
+        # Render maze image
         visual_obs = self._render_maze_image(agent_pos, goal_pos)
         if isinstance(info, dict):
             info_out = dict(info)
@@ -200,6 +287,10 @@ class MazeVisualizationWrapper(gym.Wrapper):
         # Add current position to visited
         if agent_pos is not None:
             self.visited_cells.add(tuple(agent_pos))
+        
+        # Update cached maze grid if available in info
+        if isinstance(info, dict) and 'maze_grid' in info:
+            self._cached_maze_grid = info['maze_grid']
         
         # Render maze image
         visual_obs = self._render_maze_image(agent_pos, goal_pos)
@@ -296,19 +387,13 @@ class MazeVisualizationWrapper(gym.Wrapper):
 def compute_dense_reward(previous_pos, current_pos, goal_pos):
     if current_pos is None or goal_pos is None:
         return 0.0
-    
-    # Convert to numpy arrays for easier computation
+
     curr_pos = np.array(current_pos)
     goal = np.array(goal_pos)
-    
-    # Compute euclidean distance from goal
     curr_distance = np.linalg.norm(curr_pos - goal)
-    
-    # Large positive reward for reaching goal (within 0.5 units)
     if curr_distance < 0.5:
         return 50.0
-    
-    # Reward is negative of distance (minimize distance = maximize reward)
+
     reward = -curr_distance
     
     return float(reward)

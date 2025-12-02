@@ -30,26 +30,38 @@ except ImportError:
 
 def make_env(env_id, seed, rank, log_dir, allow_early_resets, use_cnn=False, maze_size=None):
     def _thunk():
-        if env_id.startswith("dm"):
-            _, domain, task = env_id.split('.')
-            env = dmc2gym.make(domain_name=domain, task_name=task)
-            env = ClipAction(env)
-        else:
-            env = gym.make(env_id)
-            
-        # Apply maze-specific wrappers if it's a maze environment
-        if 'maze' in env_id.lower() or 'gym_maze' in env_id.lower():
+        # Check if this is a custom maze environment
+        if 'maze' in env_id.lower() or 'gym_maze' in env_id.lower() or env_id.startswith('custom-maze'):
+            from a2c_ppo_acktr.custom_maze_env import CustomMazeEnv
             from a2c_ppo_acktr.maze_utils import (
                 MazeVisualizationWrapper, 
                 DenseRewardWrapper,
                 MazeActionWrapper,
             )
+            
+            # Parse maze size from env_id or use provided
+            if maze_size is None:
+                # Try to extract from env_id (e.g., "custom-maze-5x5")
+                import re
+                match = re.search(r'(\d+)x(\d+)', env_id.lower())
+                if match:
+                    maze_size = int(match.group(1))
+                else:
+                    maze_size = 5  # default
+            
+            # Create custom maze environment
+            env = CustomMazeEnv(width=maze_size, height=maze_size, seed=seed + rank)
+            
+            # Apply wrappers in order
             env = MazeActionWrapper(env)
-            # First apply dense reward wrapper with maze_size
             env = DenseRewardWrapper(env, maze_size=maze_size)
-            # Then apply visualization wrapper with optional size override
-            # cell_size will be auto-calculated based on maze size
             env = MazeVisualizationWrapper(env, cell_size=None, max_image_size=300)
+        elif env_id.startswith("dm"):
+            _, domain, task = env_id.split('.')
+            env = dmc2gym.make(domain_name=domain, task_name=task)
+            env = ClipAction(env)
+        else:
+            env = gym.make(env_id)
 
 
         is_atari = "ALE" in env_id or "NoFrameskip" in env_id
@@ -110,7 +122,7 @@ def make_vec_envs(env_name,
 
     # For maze environments, we don't normalize observations (they're already images)
     # and we don't use frame stacking
-    if 'maze' not in env_name.lower() and 'gym_maze' not in env_name.lower():
+    if 'maze' not in env_name.lower() and 'gym_maze' not in env_name.lower() and not env_name.startswith('custom-maze'):
         if len(envs.observation_space.shape) == 1:
             if gamma is None:
                 envs = VecNormalize(envs, norm_reward=False)
@@ -120,7 +132,7 @@ def make_vec_envs(env_name,
     envs = VecPyTorch(envs, device)
 
     # Frame stacking: skip for maze environments (single frame is sufficient)
-    if 'maze' not in env_name.lower() and 'gym_maze' not in env_name.lower():
+    if 'maze' not in env_name.lower() and 'gym_maze' not in env_name.lower() and not env_name.startswith('custom-maze'):
         if num_frame_stack is not None:
             envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
         elif len(envs.observation_space.shape) == 3:
