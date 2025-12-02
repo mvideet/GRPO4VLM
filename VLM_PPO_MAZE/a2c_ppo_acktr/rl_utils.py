@@ -1,5 +1,7 @@
 import torch
 import random
+import json
+import re
 from typing import List
 
 def get_prompt(env_name, action_only=False, infos=None):
@@ -17,14 +19,13 @@ def get_prompt(env_name, action_only=False, infos=None):
             "You need to solve the entire maze in one shot without getting stuck. "
             "First, think step-by-step about the complete path you will take. "
             "After you have finished thinking, output the full trajectory as a sequence of actions. "
-            "You can choose between the four directions: ['N', 'S', 'E', 'W']. "
-            "Your response MUST be a valid JSON object in the following format:\n"
+            "You can choose between the four directions: ['up', 'right', 'left', 'down']. "
+            "Your response MUST be a valid JSON object in the following format. Once again ensure that you write a JSON object with thoughts and actions:\n"
             "{\n"
             '  "thoughts": "{first think carefully through the full path you will take}",\n'
-            '  "actions": ["N", "S", "E", "..."]\n'
+            '  "actions": ["up", "right", "left", "..."]\n'
             "}"
         )
-        return qs
     elif env_name == 'gym_cards/NumberLine-v0':
         qs = "You are playing a game called number line. You will see a target number and a current number in the image. "
         qs = qs + "And your goal is to move the current number closer to the target by choosing either adding or subtracting one to the current number. "
@@ -144,7 +145,6 @@ def get_action_only_prompt(env_name, infos=None):
 def text_projection(text_actions: List[str], env_name):
     output_indices = []
     if 'maze' in env_name.lower() or 'gym_maze' in env_name.lower():
-        # Maze actions: up=0, right=1, down=2, left=3 (standard gym-maze convention)
         action_list = ["n", "s", "e", "w"]
     elif env_name == 'gym_cards/NumberLine-v0':
         action_list = ["-", "+"]
@@ -160,7 +160,6 @@ def text_projection(text_actions: List[str], env_name):
         raise NotImplementedError("Action list not implemented for this env!")
     for string in text_actions:
         if not isinstance(string, str):
-            # directly output a random action if the string is not a string
             output_indices.append(random.randint(0, len(action_list) - 1))
             continue
         string = string.lower()
@@ -168,20 +167,175 @@ def text_projection(text_actions: List[str], env_name):
         if action_index != -1:
             string = string[action_index:]
         contained_actions = []
-        # For the 'gym_cards/Points24-v0' environment, handle '10' separately
         if 'points' in env_name.lower() and '10' in string:
             contained_actions.append('10')
             string = string.replace('10', '')  # Remove '10' to prevent it from being counted as '1'
-        # Find all actions that are contained in the string
         for action in action_list:
             if action in string:
                 contained_actions.append(action)
-        # Remove duplicates by converting to a set and back to a list
         contained_actions = list(set(contained_actions))
         if len(contained_actions) == 1 and contained_actions[0] in action_list:
-            # Only one keyword from action_list is in the string
             output_indices.append(action_list.index(contained_actions[0]))
         else:
-            # The string contains none or multiple keywords, randomly select an index from action_list
             output_indices.append(random.randint(0, len(action_list) - 1))
     return torch.Tensor([output_indices]).long().reshape(-1, 1)
+def text_projection_multi_actions(text_actions: List[str], env_name):
+    """
+    Parse multiple actions from JSON format with "actions" array for each process.
+    Returns a list of action sequences, where each sequence is a list of action indices.
+    
+    Args:
+        text_actions: List of strings, one per process (num_processes)
+        env_name: Environment name to determine action mapping
+    
+    Returns:
+        List[List[int]]: List of action sequences, one per process
+        Each inner list contains action indices in order
+    """
+    # Environment expects these action indices: [0="n", 1="s", 2="e", 3="w"]
+    action_list_map = {
+        'maze': ["n", "s", "e", "w"],
+        'gym_maze': ["n", "s", "e", "w"],
+    }
+    
+    # Mapping from model output words to environment action letters
+    # Model outputs: "up", "down", "left", "right"
+    # Environment expects: "n", "s", "w", "e"
+    direction_mapping = {
+        'up': 'n',
+        'down': 's',
+        'left': 'w',
+        'right': 'e',
+        # Also handle single letters in case model outputs them
+        'n': 'n', 'north': 'n',
+        's': 's', 'south': 's',
+        'e': 'e', 'east': 'e',
+        'w': 'w', 'west': 'w',
+    }
+    
+    # Get action list for this environment
+    action_list = None
+    for key in action_list_map:
+        if key in env_name.lower():
+            action_list = action_list_map[key]
+            break
+    
+    if action_list is None:
+        raise NotImplementedError(f"Action list not implemented for env: {env_name}")
+    
+    output_actions = []
+    
+    for string in text_actions:
+        process_actions = []
+        
+        # Skip if not a string
+        if not isinstance(string, str):
+            # Return empty sequence or single random action
+            process_actions.append(random.randint(0, len(action_list) - 1))
+            output_actions.append(process_actions)
+            continue
+        
+        # Try to parse as JSON
+        actions_array = []
+        try:
+            # First, try to find and extract JSON object from the string
+            # Look for opening brace and try to find matching closing brace
+            brace_start = string.find('{')
+            if brace_start != -1:
+                # Find matching closing brace by counting braces
+                brace_count = 0
+                brace_end = -1
+                for i in range(brace_start, len(string)):
+                    if string[i] == '{':
+                        brace_count += 1
+                    elif string[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            brace_end = i
+                            break
+                
+                if brace_end != -1:
+                    json_str = string[brace_start:brace_end + 1]
+                    try:
+                        parsed = json.loads(json_str)
+                        # Extract actions array
+                        if isinstance(parsed, dict) and "actions" in parsed:
+                            actions_array = parsed["actions"]
+                        elif isinstance(parsed, dict) and "action" in parsed:
+                            # Fallback: single action instead of array
+                            actions_array = [parsed["action"]]
+                    except json.JSONDecodeError:
+                        # JSON might be malformed, try fallback parsing
+                        pass
+                else:
+                    # JSON is incomplete (no closing brace found)
+                    # Try to extract actions array from incomplete JSON
+                    actions_match = re.search(r'"actions"\s*:\s*\[(.*?)(?:\]|$)', string[brace_start:], re.IGNORECASE | re.DOTALL)
+                    if actions_match:
+                        array_content = actions_match.group(1)
+                        # Extract quoted strings even if array is incomplete
+                        quoted_strings = re.findall(r'["\']([^"\']+)["\']', array_content)
+                        if quoted_strings:
+                            actions_array = quoted_strings
+                
+                # If JSON parsing failed, try parsing the whole string
+                if len(actions_array) == 0:
+                    try:
+                        parsed = json.loads(string)
+                        if isinstance(parsed, dict) and "actions" in parsed:
+                            actions_array = parsed["actions"]
+                        elif isinstance(parsed, dict) and "action" in parsed:
+                            actions_array = [parsed["action"]]
+                    except json.JSONDecodeError:
+                        pass
+                
+        except Exception as e:
+            # If JSON parsing completely fails, try regex fallback
+            pass
+        
+        # Fallback: Try to extract actions array using regex if JSON parsing failed
+        if len(actions_array) == 0:
+            # Look for array pattern like ["N", "S", "E"] or ['N', 'S', 'E']
+            array_match = re.search(r'\[(.*?)\]', string, re.DOTALL)
+            if array_match:
+                array_content = array_match.group(1)
+                # Extract quoted strings from the array
+                quoted_strings = re.findall(r'["\']([^"\']+)["\']', array_content)
+                if quoted_strings:
+                    actions_array = quoted_strings
+                else:
+                    # Try without quotes - look for comma-separated values
+                    # Check if it's in the "actions" field
+                    actions_match = re.search(r'"actions"\s*:\s*\[(.*?)\]', string, re.IGNORECASE | re.DOTALL)
+                    if actions_match:
+                        array_content = actions_match.group(1)
+                        quoted_strings = re.findall(r'["\']([^"\']+)["\']', array_content)
+                        actions_array = quoted_strings
+        
+        for action_str in actions_array:
+            if not isinstance(action_str, str):
+                action_str = str(action_str)
+            
+            action_str = action_str.lower().strip()
+            
+            # Map model output ("up", "down", "left", "right") to environment actions ("n", "s", "w", "e")
+            if action_str in direction_mapping:
+                action_str = direction_mapping[action_str]
+            
+            if action_str in action_list:
+                process_actions.append(action_list.index(action_str))
+            else:
+                # Invalid action - use random action silently
+                process_actions.append(random.randint(0, len(action_list) - 1))
+        
+        if len(process_actions) == 0:
+            # No valid actions found, use random action
+            process_actions.append(random.randint(0, len(action_list) - 1))
+        
+        output_actions.append(process_actions)    
+    return output_actions
+
+def grpo_maze_parse(text_actions: List[str], env_name: str = None):
+    if env_name is None:
+        env_name = "maze"
+    return text_projection_multi_actions(text_actions, env_name)

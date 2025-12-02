@@ -1,0 +1,23 @@
+2025-12-02 05:40:04,131 INFO    MainThread:122686 [wandb_setup.py:_flush():80] Current SDK version is 0.23.0
+2025-12-02 05:40:04,132 INFO    MainThread:122686 [wandb_setup.py:_flush():80] Configure stats pid to 122686
+2025-12-02 05:40:04,132 INFO    MainThread:122686 [wandb_setup.py:_flush():80] Loading settings from /root/.config/wandb/settings
+2025-12-02 05:40:04,133 INFO    MainThread:122686 [wandb_setup.py:_flush():80] Loading settings from /workspace/GRPO4VLM/unsloth_test/wandb/settings
+2025-12-02 05:40:04,133 INFO    MainThread:122686 [wandb_setup.py:_flush():80] Loading settings from environment variables
+2025-12-02 05:40:04,134 INFO    MainThread:122686 [wandb_init.py:setup_run_log_directory():713] Logging user logs to /workspace/GRPO4VLM/unsloth_test/wandb/run-20251202_054004-tp8s245f/logs/debug.log
+2025-12-02 05:40:04,136 INFO    MainThread:122686 [wandb_init.py:setup_run_log_directory():714] Logging internal logs to /workspace/GRPO4VLM/unsloth_test/wandb/run-20251202_054004-tp8s245f/logs/debug-internal.log
+2025-12-02 05:40:04,136 INFO    MainThread:122686 [wandb_init.py:init():840] calling init triggers
+2025-12-02 05:40:04,137 INFO    MainThread:122686 [wandb_init.py:init():845] wandb.init called with sweep_config: {}
+config: {'model': 'gemma-3-4b-it', 'lora_r': 16, 'learning_rate': 5e-06, 'maze_sizes': [(5, 5), (7, 7), (10, 10)], 'batch_size': 1, 'gradient_accumulation_steps': 2, 'num_generations': 4, 'max_prompt_length': 1024, 'max_completion_length': 512, 'max_steps': 200, 'save_steps': 50, 'format_reward': 1.0, 'solve_reward': 10.0, 'efficiency_bonus': 0.1, 'partial_credit_weight': 1.0, 'use_curriculum': True, 'curriculum_steps_per_level': 50, 'curriculum_start_level': 0, '_wandb': {}}
+2025-12-02 05:40:04,137 INFO    MainThread:122686 [wandb_init.py:init():888] starting backend
+2025-12-02 05:40:04,633 INFO    MainThread:122686 [wandb_init.py:init():891] sending inform_init request
+2025-12-02 05:40:04,659 INFO    MainThread:122686 [wandb_init.py:init():899] backend started and connected
+2025-12-02 05:40:04,670 INFO    MainThread:122686 [wandb_init.py:init():969] updated telemetry
+2025-12-02 05:40:04,764 INFO    MainThread:122686 [wandb_init.py:init():993] communicating run to backend with 90.0 second timeout
+2025-12-02 05:40:05,206 INFO    MainThread:122686 [wandb_init.py:init():1040] starting run threads in backend
+2025-12-02 05:40:06,741 INFO    MainThread:122686 [wandb_run.py:_console_start():2504] atexit reg
+2025-12-02 05:40:06,742 INFO    MainThread:122686 [wandb_run.py:_redirect():2352] redirect: wrap_raw
+2025-12-02 05:40:06,743 INFO    MainThread:122686 [wandb_run.py:_redirect():2421] Wrapping output streams.
+2025-12-02 05:40:06,743 INFO    MainThread:122686 [wandb_run.py:_redirect():2444] Redirects installed.
+2025-12-02 05:40:06,760 INFO    MainThread:122686 [wandb_init.py:init():1080] run started, returning control to user process
+2025-12-02 05:40:57,636 INFO    wandb-AsyncioManager-main:122686 [service_client.py:_forward_responses():80] Reached EOF.
+2025-12-02 05:40:57,637 INFO    wandb-AsyncioManager-main:122686 [mailbox.py:close():137] Closing mailbox, abandoning 1 handles.

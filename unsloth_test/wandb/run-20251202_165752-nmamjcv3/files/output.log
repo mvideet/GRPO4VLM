@@ -1,0 +1,114 @@
+[34m[1mwandb[0m: Detected [huggingface_hub.inference, openai] in use.
+[34m[1mwandb[0m: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+[34m[1mwandb[0m: For more information, check out the docs at: https://weave-docs.wandb.ai/
+==((====))==  Unsloth 2025.11.6: Fast Gemma3 patching. Transformers: 4.57.3.
+   \\   /|    NVIDIA A40. Num GPUs = 1. Max memory: 44.422 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.9.1+cu128. CUDA: 8.6. CUDA Toolkit: 12.8. Triton: 3.5.1
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.33.post1. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+Unsloth: Gemma3 does not support SDPA - switching to fast eager.
+Unsloth: Making `model.base_model.model.model.language_model` require gradients
+  Model: unsloth/gemma-3-4b-it
+  LoRA rank: 16
+
+[2/5] Generating maze dataset...
+  Generated 400 mazes
+  Maze sizes: [(5, 5), (6, 6), (7, 7), (10, 10)]
+
+  Saving maze images to maze_images/...
+  Saved 400 maze images to maze_images/
+
+[3/5] Preparing dataset...
+Map: 100%|██████████████████████████████████████████████████████████████████████████████████| 400/400 [00:02<00:00, 176.56 examples/s]
+Filter: 100%|██████████████████████████████████████████████████████████████████████████████| 400/400 [00:00<00:00, 1060.35 examples/s]
+
+🎓 Curriculum Learning: Starting at Level 0 (Maze size: (5, 5))
+  Will advance every 200 steps
+  Dataset ready with 100 examples
+
+  Sample prompt (truncated):
+  --------------------------------------------------
+  <bos><start_of_turn>user
+You are a maze-solving AI. You will be shown an image of a maze and must navigate from the green circle (start) to the red circle (goal).
+
+The maze uses a grid system where:
+- Black cells are walls (impassable)
+- White cells are paths (walkable)
+- Green circle = your current position (agent)
+- Red circle = goal position
+
+Available actions: UP, DOWN, LEFT, RIGHT
+
+Output format:
+1. First, provide your reasoning about the maze layout and optimal path inside <REASONING> and ...
+
+[4/5] Configuring GRPO trainer...
+  Training configuration:
+    Learning rate: 5e-05
+    Batch size: 4
+    Gradient accumulation: 2
+    Max steps: 2000
+
+[5/5] Starting training...
+============================================================
+Watch the 'reward' column - it should increase over time!
+Be patient - first 50-100 steps may show low rewards.
+============================================================
+The model is already on multiple devices. Skipping the move to device specified in `args`.
+==((====))==  Unsloth - 2x faster free finetuning | Num GPUs used = 1
+   \\   /|    Num examples = 100 | Num Epochs = 40 | Total steps = 2,000
+O^O/ \_/ \    Batch size per device = 4 | Gradient accumulation steps = 2
+\        /    Data Parallel GPUs = 1 | Total batch size (4 x 2 x 1) = 8
+ "-____-"     Trainable parameters = 29,802,496 of 4,329,881,968 (0.69% trained)
+  0%|                                                                                                        | 0/2000 [00:00<?, ?it/s]`generation_config` default values have been modified to match model-specific defaults: {'top_p': 0.95}. If this is not desired, please set these values explicitly.
+Unsloth: Will smartly offload gradients to save VRAM!
+  0%|▏                                                                                     | 3/2000 [02:45<27:07:23, 48.90s/it]Error in sys.excepthook:
+{'loss': -0.0015, 'grad_norm': 0.09050742536783218, 'learning_rate': 0.0, 'num_tokens': 5256.0, 'completions/mean_length': 98.0, 'completions/min_length': 76.0, 'completions/max_length': 108.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.0, 'completions/min_terminated_length': 76.0, 'completions/max_terminated_length': 108.0, 'rewards/formatting_reward_func/mean': 6.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 21.09375, 'rewards/maze_execution_reward_func/std': 5.725783824920654, 'reward': 27.09375, 'reward_std': 5.1709394454956055, 'frac_reward_zero_std': 0.0, 'completion_length': 98.0, 'kl': 0.0007899934716988355, 'epoch': 0.02}
+{'loss': -0.0065, 'grad_norm': 0.12046211212873459, 'learning_rate': 2.5000000000000004e-07, 'num_tokens': 10459.0, 'completions/mean_length': 91.375, 'completions/min_length': 78.0, 'completions/max_length': 111.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 91.375, 'completions/min_terminated_length': 78.0, 'completions/max_terminated_length': 111.0, 'rewards/formatting_reward_func/mean': 6.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 17.96875, 'rewards/maze_execution_reward_func/std': 5.215768814086914, 'reward': 23.96875, 'reward_std': 3.9322054386138916, 'frac_reward_zero_std': 0.5, 'completion_length': 91.375, 'kl': 0.0011991946958005428, 'epoch': 0.04}
+{'loss': -0.0105, 'grad_norm': 0.08847049623727798, 'learning_rate': 5.000000000000001e-07, 'num_tokens': 15760.0, 'completions/mean_length': 103.625, 'completions/min_length': 80.0, 'completions/max_length': 120.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 103.625, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 120.0, 'rewards/formatting_reward_func/mean': 6.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 19.53125, 'rewards/maze_execution_reward_func/std': 2.2097086906433105, 'reward': 25.53125, 'reward_std': 1.5625, 'frac_reward_zero_std': 0.5, 'completion_length': 103.625, 'kl': 0.001029130187816918, 'epoch': 0.06}
+Traceback (most recent call last):
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/wandb/sdk/lib/exit_hooks.py", line 52, in exc_handler
+    traceback.print_exception(exc_type, exc, tb)
+  File "/usr/lib/python3.12/traceback.py", line 124, in print_exception
+    te = TracebackException(type(value), value, tb, limit=limit, compact=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/traceback.py", line 733, in __init__
+    self.stack = StackSummary._extract_from_extended_frame_gen(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/traceback.py", line 438, in _extract_from_extended_frame_gen
+    f.line
+  File "/usr/lib/python3.12/traceback.py", line 323, in line
+    self._line = linecache.getline(self.filename, self.lineno)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/linecache.py", line 30, in getline
+    lines = getlines(filename, module_globals)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/xformers/triton/vararg_kernel.py", line 177, in _monkey_patched_getlines
+    return _getlines_orig(filename, module_globals)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/linecache.py", line 46, in getlines
+    return updatecache(filename, module_globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/linecache.py", line 136, in updatecache
+    with tokenize.open(fullname) as fp:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/tokenize.py", line 451, in open
+    encoding, lines = detect_encoding(buffer.readline)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/tokenize.py", line 420, in detect_encoding
+    first = read_or_stop()
+            ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/tokenize.py", line 378, in read_or_stop
+    return readline()
+           ^^^^^^^^^^
+KeyboardInterrupt
+
+Original exception was:
+Traceback (most recent call last):
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/feature_extraction_utils.py", line 189, in convert_to_tensors
+    tensor = as_tensor(value)
+             ^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/feature_extraction_utils.py", line 134, in as_tensor
+    value = np.array(value)
+            ^^^^^^^^^^^

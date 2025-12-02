@@ -1,6 +1,6 @@
 import numpy as np
-import gymnasium as gym
-from gymnasium import spaces
+import gym
+from gym import spaces
 from PIL import Image, ImageDraw, ImageFont
 import io
 
@@ -29,10 +29,17 @@ class MazeActionWrapper(gym.ActionWrapper):
         base = self._base_env()
         result = base.reset()  # MazeEnv.reset() -> obs (np.array shape (2,))
 
-        # New-style API is (obs, info)
-        obs = result
-        info = {}
-        return obs, info
+        # Old gym API: reset() returns just obs, not (obs, info)
+        # Handle both cases for compatibility
+        if isinstance(result, tuple) and len(result) == 2:
+            obs, info = result
+        else:
+            obs = result
+            info = {}
+        
+        # Store info in environment for downstream wrappers
+        self._last_info = info
+        return obs
 
     def step(self, action):
         """
@@ -165,10 +172,12 @@ class MazeVisualizationWrapper(gym.Wrapper):
     
     def reset(self, **kwargs):
         result = self.env.reset()
+        # Old gym API: reset() returns just obs
         if isinstance(result, tuple) and len(result) == 2:
             obs, info = result
         else:
-            obs, info = result, {}
+            obs = result
+            info = {}
 
         self.visited_cells = set()
         agent_pos = self._extract_agent_position(obs, info)
@@ -178,16 +187,16 @@ class MazeVisualizationWrapper(gym.Wrapper):
 
         # Render maze image (handles None safely if you applied previous fixes)
         visual_obs = self._render_maze_image(agent_pos, goal_pos)
-        if isinstance(info, dict):
-            info_out = dict(info)
-        else:
-            info_out = {}
-
-        info_out['agent_pos'] = agent_pos
-        info_out['goal_pos'] = goal_pos
-        info_out['previous_pos'] = agent_pos
-
-        return visual_obs, info_out
+        
+        # Store info for step() method
+        self._last_info = {
+            'agent_pos': agent_pos,
+            'goal_pos': goal_pos,
+            'previous_pos': agent_pos
+        }
+        
+        # Old gym API: return just observation
+        return visual_obs
     
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
@@ -337,10 +346,12 @@ class DenseRewardWrapper(gym.Wrapper):
     
     def reset(self, **kwargs):
         result = self.env.reset()
+        # Old gym API: reset() returns just obs
         if isinstance(result, tuple) and len(result) == 2:
             obs, info = result
         else:
-            obs, info = result, {}
+            obs = result
+            info = {}
         
         # Handle vectorized environments (info is a list)
         if isinstance(info, list) and len(info) > 0:
@@ -389,19 +400,14 @@ class DenseRewardWrapper(gym.Wrapper):
                     if isinstance(size, (list, tuple)) and len(size) >= 2:
                         self.goal_pos = [size[0] - 1, size[1] - 1]
         
-        # Store in info for visualization wrapper
-        if isinstance(info, list):
-            for i, inf in enumerate(info):
-                if isinstance(inf, dict):
-                    inf['previous_pos'] = self.previous_pos
-                    inf['goal_pos'] = self.goal_pos
-        elif isinstance(info, dict):
-            info['previous_pos'] = self.previous_pos
-            info['goal_pos'] = self.goal_pos
-        else:
-            info = {'previous_pos': self.previous_pos, 'goal_pos': self.goal_pos}
+        # Store positions for step() method
+        self._last_info = {
+            'previous_pos': self.previous_pos,
+            'goal_pos': self.goal_pos
+        }
         
-        return obs, info
+        # Old gym API: return just observation
+        return obs
     
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
@@ -484,4 +490,54 @@ class DenseRewardWrapper(gym.Wrapper):
                 info['previous_pos'] = self.previous_pos
             
             return obs, dense_reward, terminated, truncated, info
+
+
+def grpo_act(env, action_sequence):
+    """
+    Execute a sequence of actions in the environment and return the final reward.
+    This is used for GRPO where we generate a full action sequence upfront.
+    
+    Args:
+        env: Gymnasium environment (can be wrapped)
+        action_sequence: List of action indices (integers) to execute
+    
+    Returns:
+        final_obs: Final observation after executing all actions
+        total_reward: Sum of rewards from all steps
+        terminated: Whether episode terminated during execution
+        truncated: Whether episode was truncated
+        final_info: Info dict from final step
+        step_count: Number of steps actually executed
+    """
+    total_reward = 0.0
+    terminated = False
+    truncated = False
+    final_info = {}
+    step_count = 0
+    
+    for action_idx in action_sequence:
+        if terminated or truncated:
+            break
+        
+        # Handle both old Gym API (4 values) and Gymnasium API (5 values)
+        result = env.step(action_idx)
+        if isinstance(result, tuple):
+            if len(result) == 4:
+                # Old Gym API: (obs, reward, done, info)
+                obs, reward, done, info = result
+                terminated = bool(done)
+                truncated = False
+            elif len(result) == 5:
+                # Gymnasium API: (obs, reward, terminated, truncated, info)
+                obs, reward, terminated, truncated, info = result
+            else:
+                raise RuntimeError(f"Unexpected step() return length: {len(result)}")
+        else:
+            raise RuntimeError(f"step() did not return a tuple: {type(result)}")
+        
+        total_reward += reward
+        final_info = info
+        step_count += 1
+    
+    return obs, total_reward, terminated, truncated, final_info, step_count
 

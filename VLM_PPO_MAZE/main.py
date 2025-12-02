@@ -11,7 +11,7 @@ import os
 import time
 from collections import deque
 
-import gymnasium as gym
+import gym
 import gym_maze
 import numpy as np
 import torch

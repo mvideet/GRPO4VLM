@@ -1,0 +1,860 @@
+_name_or_path:
+    value: unsloth/gemma-3-4b-it-unsloth-bnb-4bit
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            6v3hkei36fop8otacqrdhihhgdbhwonn:
+                codePath: unsloth_test/train.py
+                codePathLocal: train.py
+                cpu_count: 48
+                cpu_count_logical: 96
+                cudaVersion: "12.9"
+                disk:
+                    /:
+                        total: "32212254720"
+                        used: "363716608"
+                email: mvideet@gmail.com
+                executable: /workspace/GRPO4VLM/.venv/bin/python
+                git:
+                    commit: eabc59bc0371c5da9dbec79c6853362056f14d97
+                    remote: https://github.com/mvideet/GRPO4VLM.git
+                gpu: NVIDIA A40
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 10752
+                      memoryTotal: "48305799168"
+                      name: NVIDIA A40
+                      uuid: GPU-1f0feb6a-fab5-5855-1688-5682b31c552c
+                host: 0c557e504ca0
+                memory:
+                    total: "540644200448"
+                os: Linux-6.8.0-64-generic-x86_64-with-glibc2.39
+                program: /workspace/GRPO4VLM/unsloth_test/train.py
+                python: CPython 3.12.3
+                root: /workspace/GRPO4VLM/unsloth_test
+                startedAt: "2025-12-02T06:20:29.442099Z"
+                writerId: 6v3hkei36fop8otacqrdhihhgdbhwonn
+        m:
+            - "1": train/global_step
+              "6":
+                - 3
+              "7": []
+            - "2": '*'
+              "5": 1
+              "6":
+                - 1
+              "7": []
+        python_version: 3.12.3
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 63
+                - 71
+                - 84
+                - 95
+                - 98
+                - 105
+            "2":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 63
+                - 71
+                - 84
+                - 95
+                - 98
+                - 105
+            "3":
+                - 2
+                - 7
+                - 13
+                - 16
+                - 19
+                - 61
+                - 62
+                - 66
+            "4": 3.12.3
+            "5": 0.23.0
+            "6": 4.57.3
+            "9":
+                "1": transformers_trainer
+            "12": 0.23.0
+            "13": linux-x86_64
+accelerator_config:
+    value:
+        dispatch_batches: null
+        even_batches: true
+        gradient_accumulation_kwargs: null
+        non_blocking: false
+        split_batches: false
+        use_seedable_sampler: true
+adafactor:
+    value: false
+adam_beta1:
+    value: 0.9
+adam_beta2:
+    value: 0.99
+adam_epsilon:
+    value: 1e-08
+add_cross_attention:
+    value: false
+architectures:
+    value:
+        - Gemma3ForConditionalGeneration
+auto_find_batch_size:
+    value: false
+average_tokens_across_devices:
+    value: true
+bad_words_ids:
+    value: null
+batch_eval_metrics:
+    value: false
+batch_size:
+    value: 1
+begin_suppress_tokens:
+    value: null
+beta:
+    value: 0.001
+bf16:
+    value: true
+bf16_full_eval:
+    value: true
+boi_token_index:
+    value: 255999
+bos_token_id:
+    value: 2
+cache_implementation:
+    value: null
+chunk_size_feed_forward:
+    value: 0
+cross_attention_hidden_size:
+    value: null
+curriculum_start_level:
+    value: 0
+curriculum_steps_per_level:
+    value: 50
+data_seed:
+    value: 3407
+dataloader_drop_last:
+    value: false
+dataloader_num_workers:
+    value: 0
+dataloader_persistent_workers:
+    value: false
+dataloader_pin_memory:
+    value: true
+dataloader_prefetch_factor:
+    value: null
+ddp_backend:
+    value: null
+ddp_broadcast_buffers:
+    value: null
+ddp_bucket_cap_mb:
+    value: null
+ddp_find_unused_parameters:
+    value: null
+ddp_timeout:
+    value: 1800
+debug:
+    value: []
+decoder_start_token_id:
+    value: null
+deepspeed:
+    value: null
+delta:
+    value: null
+disable_dropout:
+    value: false
+disable_tqdm:
+    value: false
+diversity_penalty:
+    value: 0
+do_eval:
+    value: false
+do_predict:
+    value: false
+do_sample:
+    value: false
+do_train:
+    value: false
+ds3_gather_for_generation:
+    value: true
+dtype:
+    value: bfloat16
+early_stopping:
+    value: false
+efficiency_bonus:
+    value: 0.1
+encoder_no_repeat_ngram_size:
+    value: 0
+eoi_token_index:
+    value: 256000
+eos_token_id:
+    value: 106
+epsilon:
+    value: 0.2
+epsilon_high:
+    value: null
+eval_accumulation_steps:
+    value: 2
+eval_delay:
+    value: 0
+eval_do_concat_batches:
+    value: true
+eval_on_start:
+    value: false
+eval_steps:
+    value: null
+eval_strategy:
+    value: "no"
+eval_use_gather_object:
+    value: false
+exponential_decay_length_penalty:
+    value: null
+finetuning_task:
+    value: null
+forced_bos_token_id:
+    value: null
+forced_eos_token_id:
+    value: null
+format_reward:
+    value: 1
+fp16:
+    value: false
+fp16_backend:
+    value: auto
+fp16_full_eval:
+    value: false
+fp16_opt_level:
+    value: O1
+fsdp:
+    value: []
+fsdp_config:
+    value:
+        min_num_params: 0
+        xla: false
+        xla_fsdp_grad_ckpt: false
+        xla_fsdp_v2: false
+fsdp_min_num_params:
+    value: 0
+fsdp_transformer_layer_cls_to_wrap:
+    value: null
+full_determinism:
+    value: false
+generation_batch_size:
+    value: 8
+gradient_accumulation_steps:
+    value: 2
+gradient_checkpointing:
+    value: true
+gradient_checkpointing_kwargs:
+    value: null
+greater_is_better:
+    value: null
+group_by_length:
+    value: false
+half_precision_backend:
+    value: auto
+hub_always_push:
+    value: false
+hub_model_id:
+    value: null
+hub_private_repo:
+    value: null
+hub_revision:
+    value: null
+hub_strategy:
+    value: every_save
+hub_token:
+    value: <HUB_TOKEN>
+id2label:
+    value:
+        "0": LABEL_0
+        "1": LABEL_1
+ignore_data_skip:
+    value: false
+image_token_index:
+    value: 262144
+importance_sampling_level:
+    value: sequence
+include_for_metrics:
+    value: []
+include_inputs_for_metrics:
+    value: false
+include_num_input_tokens_seen:
+    value: "no"
+include_tokens_per_second:
+    value: false
+initializer_range:
+    value: 0.02
+is_decoder:
+    value: false
+is_encoder_decoder:
+    value: false
+jit_mode_eval:
+    value: false
+label_names:
+    value: null
+label_smoothing_factor:
+    value: 0
+label2id:
+    value:
+        LABEL_0: 0
+        LABEL_1: 1
+learning_rate:
+    value: 5e-06
+length_column_name:
+    value: length
+length_penalty:
+    value: 1
+liger_kernel_config:
+    value: null
+load_best_model_at_end:
+    value: false
+local_rank:
+    value: 0
+log_completions:
+    value: false
+log_level:
+    value: passive
+log_level_replica:
+    value: warning
+log_on_each_node:
+    value: true
+logging_dir:
+    value: maze_grpo_outputs/runs/Dec02_06-21-09_0c557e504ca0
+logging_first_step:
+    value: false
+logging_nan_inf_filter:
+    value: false
+logging_steps:
+    value: 1
+logging_strategy:
+    value: steps
+lora_r:
+    value: 16
+loss_type:
+    value: dr_grpo
+lr_scheduler_type:
+    value: cosine
+mask_truncated_completions:
+    value: false
+max_completion_length:
+    value: 512
+max_grad_norm:
+    value: 0.1
+max_length:
+    value: 20
+max_prompt_length:
+    value: 1024
+max_steps:
+    value: 200
+maze_sizes:
+    value:
+        - - 5
+          - 5
+        - - 7
+          - 7
+        - - 10
+          - 10
+metric_for_best_model:
+    value: null
+min_length:
+    value: 0
+min_p:
+    value: null
+mm_tokens_per_image:
+    value: 256
+model:
+    value: gemma-3-4b-it
+model/num_parameters:
+    value: 4329881968
+model_init_kwargs:
+    value: null
+model_type:
+    value: gemma3
+mp_parameters:
+    value: ""
+neftune_noise_alpha:
+    value: null
+no_cuda:
+    value: false
+no_repeat_ngram_size:
+    value: 0
+num_beam_groups:
+    value: 1
+num_beams:
+    value: 1
+num_completions_to_print:
+    value: null
+num_generations:
+    value: 4
+num_iterations:
+    value: 1
+num_return_sequences:
+    value: 1
+num_train_epochs:
+    value: 3
+optim:
+    value: adamw_8bit
+optim_args:
+    value: null
+optim_target_modules:
+    value: null
+output_attentions:
+    value: false
+output_dir:
+    value: maze_grpo_outputs
+output_hidden_states:
+    value: false
+output_scores:
+    value: false
+overwrite_output_dir:
+    value: null
+pad_token_id:
+    value: 0
+parallelism_config:
+    value: null
+partial_credit_weight:
+    value: 1
+past_index:
+    value: -1
+peft_config:
+    value:
+        default:
+            alora_invocation_tokens: null
+            arrow_config: null
+            auto_mapping:
+                base_model_class: Gemma3ForConditionalGeneration
+                parent_library: transformers.models.gemma3.modeling_gemma3
+                unsloth_fixed: true
+            base_model_name_or_path: unsloth/gemma-3-4b-it-unsloth-bnb-4bit
+            bias: none
+            corda_config: null
+            ensure_weight_tying: false
+            eva_config: null
+            exclude_modules: null
+            fan_in_fan_out: false
+            inference_mode: false
+            init_lora_weights: true
+            layer_replication: null
+            layers_pattern: null
+            layers_to_transform: null
+            lora_alpha: 16
+            lora_bias: false
+            lora_dropout: 0
+            megatron_config: null
+            megatron_core: megatron.core
+            modules_to_save: null
+            peft_type: LORA
+            peft_version: 0.18.0
+            qalora_group_size: 16
+            r: 16
+            revision: null
+            runtime_config:
+                ephemeral_gpu_offload: false
+            target_modules: (?:.*?(?:language|text).*?(?:self_attn|attention|attn|mlp|feed_forward|ffn|dense).*?(?:k_proj|v_proj|q_proj|out_proj|fc1|fc2|o_proj|gate_proj|up_proj|down_proj).*?)|(?:\bmodel\.layers\.[\d]{1,}\.(?:self_attn|attention|attn|mlp|feed_forward|ffn|dense)\.(?:(?:k_proj|v_proj|q_proj|out_proj|fc1|fc2|o_proj|gate_proj|up_proj|down_proj)))
+            target_parameters: null
+            task_type: CAUSAL_LM
+            trainable_token_indices: null
+            use_dora: false
+            use_qalora: false
+            use_rslora: false
+per_device_eval_batch_size:
+    value: 4
+per_device_train_batch_size:
+    value: 4
+per_gpu_eval_batch_size:
+    value: null
+per_gpu_train_batch_size:
+    value: null
+prediction_loss_only:
+    value: false
+prefix:
+    value: null
+problem_type:
+    value: null
+project:
+    value: huggingface
+push_to_hub:
+    value: false
+push_to_hub_model_id:
+    value: null
+push_to_hub_organization:
+    value: null
+push_to_hub_token:
+    value: <PUSH_TO_HUB_TOKEN>
+quantization_config:
+    value:
+        bnb_4bit_compute_dtype: bfloat16
+        bnb_4bit_quant_type: nf4
+        bnb_4bit_use_double_quant: true
+        llm_int8_enable_fp32_cpu_offload: false
+        llm_int8_has_fp16_weight: false
+        llm_int8_skip_modules: null
+        llm_int8_threshold: 6
+        load_in_4bit: true
+        load_in_8bit: false
+        quant_method: bitsandbytes
+ray_scope:
+    value: last
+ref_model_mixup_alpha:
+    value: 0.6
+ref_model_sync_steps:
+    value: 512
+remove_invalid_values:
+    value: false
+remove_unused_columns:
+    value: false
+repetition_penalty:
+    value: 1
+report_to:
+    value:
+        - wandb
+restore_callback_states_from_checkpoint:
+    value: false
+resume_from_checkpoint:
+    value: null
+return_dict:
+    value: true
+return_dict_in_generate:
+    value: false
+reward_weights:
+    value: null
+run_name:
+    value: null
+save_on_each_node:
+    value: false
+save_only_model:
+    value: false
+save_safetensors:
+    value: true
+save_steps:
+    value: 50
+save_strategy:
+    value: steps
+save_total_limit:
+    value: null
+scale_rewards:
+    value: group
+seed:
+    value: 3407
+sep_token_id:
+    value: null
+shuffle_dataset:
+    value: true
+skip_memory_metrics:
+    value: true
+solve_reward:
+    value: 10
+steps_per_generation:
+    value: 2
+suppress_tokens:
+    value: null
+sync_ref_model:
+    value: false
+task_specific_params:
+    value: null
+temperature:
+    value: 1
+text_config:
+    value:
+        _name_or_path: ""
+        _sliding_window_pattern: 6
+        add_cross_attention: false
+        architectures: null
+        attention_bias: false
+        attention_dropout: 0
+        attn_logit_softcapping: null
+        bad_words_ids: null
+        begin_suppress_tokens: null
+        bos_token_id: 2
+        cache_implementation: hybrid
+        chunk_size_feed_forward: 0
+        cross_attention_hidden_size: null
+        decoder_start_token_id: null
+        diversity_penalty: 0
+        do_sample: false
+        dtype: bfloat16
+        early_stopping: false
+        encoder_no_repeat_ngram_size: 0
+        eos_token_id: 1
+        exponential_decay_length_penalty: null
+        final_logit_softcapping: null
+        finetuning_task: null
+        forced_bos_token_id: null
+        forced_eos_token_id: null
+        head_dim: 256
+        hidden_activation: gelu_pytorch_tanh
+        hidden_size: 2560
+        id2label:
+            "0": LABEL_0
+            "1": LABEL_1
+        initializer_range: 0.02
+        intermediate_size: 10240
+        is_decoder: false
+        is_encoder_decoder: false
+        label2id:
+            LABEL_0: 0
+            LABEL_1: 1
+        layer_types:
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - full_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - full_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - full_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - full_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - full_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+            - sliding_attention
+        length_penalty: 1
+        max_length: 20
+        max_position_embeddings: 131072
+        min_length: 0
+        model_type: gemma3_text
+        no_repeat_ngram_size: 0
+        num_attention_heads: 8
+        num_beam_groups: 1
+        num_beams: 1
+        num_hidden_layers: 34
+        num_key_value_heads: 4
+        num_return_sequences: 1
+        output_attentions: false
+        output_hidden_states: false
+        output_scores: false
+        pad_token_id: 0
+        prefix: null
+        problem_type: null
+        query_pre_attn_scalar: 256
+        remove_invalid_values: false
+        repetition_penalty: 1
+        return_dict: true
+        return_dict_in_generate: false
+        rms_norm_eps: 1e-06
+        rope_local_base_freq: 10000
+        rope_scaling:
+            factor: 8
+            rope_type: linear
+        rope_theta: 1e+06
+        sep_token_id: null
+        sliding_window: 1024
+        sliding_window_pattern: 6
+        suppress_tokens: null
+        task_specific_params: null
+        temperature: 1
+        tf_legacy_loss: false
+        tie_encoder_decoder: false
+        tie_word_embeddings: true
+        tokenizer_class: null
+        top_k: 50
+        top_p: 1
+        torchscript: false
+        typical_p: 1
+        use_bfloat16: false
+        use_bidirectional_attention: false
+        use_cache: true
+        vocab_size: 262208
+tf_legacy_loss:
+    value: false
+tf32:
+    value: null
+tie_encoder_decoder:
+    value: false
+tie_word_embeddings:
+    value: true
+tokenizer_class:
+    value: null
+top_entropy_quantile:
+    value: 1
+top_k:
+    value: null
+top_p:
+    value: 1
+torch_compile:
+    value: false
+torch_compile_backend:
+    value: null
+torch_compile_mode:
+    value: null
+torch_empty_cache_steps:
+    value: 250
+torchdynamo:
+    value: null
+torchscript:
+    value: false
+tpu_metrics_debug:
+    value: false
+tpu_num_cores:
+    value: null
+trackio_space_id:
+    value: trackio
+transformers_version:
+    value: 4.57.3
+typical_p:
+    value: 1
+unsloth_fixed:
+    value: true
+unsloth_num_chunks:
+    value: -1
+unsloth_version:
+    value: 2025.11.6
+use_bfloat16:
+    value: false
+use_cpu:
+    value: false
+use_curriculum:
+    value: true
+use_legacy_prediction_loop:
+    value: false
+use_liger_kernel:
+    value: false
+use_liger_loss:
+    value: false
+use_mps_device:
+    value: false
+use_transformers_paged:
+    value: false
+use_vllm:
+    value: false
+vision_config:
+    value:
+        _name_or_path: ""
+        add_cross_attention: false
+        architectures: null
+        attention_dropout: 0
+        bad_words_ids: null
+        begin_suppress_tokens: null
+        bos_token_id: null
+        chunk_size_feed_forward: 0
+        cross_attention_hidden_size: null
+        decoder_start_token_id: null
+        diversity_penalty: 0
+        do_sample: false
+        dtype: bfloat16
+        early_stopping: false
+        encoder_no_repeat_ngram_size: 0
+        eos_token_id: null
+        exponential_decay_length_penalty: null
+        finetuning_task: null
+        forced_bos_token_id: null
+        forced_eos_token_id: null
+        hidden_act: gelu_pytorch_tanh
+        hidden_size: 1152
+        id2label:
+            "0": LABEL_0
+            "1": LABEL_1
+        image_size: 896
+        intermediate_size: 4304
+        is_decoder: false
+        is_encoder_decoder: false
+        label2id:
+            LABEL_0: 0
+            LABEL_1: 1
+        layer_norm_eps: 1e-06
+        length_penalty: 1
+        max_length: 20
+        min_length: 0
+        model_type: siglip_vision_model
+        no_repeat_ngram_size: 0
+        num_attention_heads: 16
+        num_beam_groups: 1
+        num_beams: 1
+        num_channels: 3
+        num_hidden_layers: 27
+        num_return_sequences: 1
+        output_attentions: false
+        output_hidden_states: false
+        output_scores: false
+        pad_token_id: null
+        patch_size: 14
+        prefix: null
+        problem_type: null
+        remove_invalid_values: false
+        repetition_penalty: 1
+        return_dict: true
+        return_dict_in_generate: false
+        sep_token_id: null
+        suppress_tokens: null
+        task_specific_params: null
+        temperature: 1
+        tf_legacy_loss: false
+        tie_encoder_decoder: false
+        tie_word_embeddings: true
+        tokenizer_class: null
+        top_k: 50
+        top_p: 1
+        torchscript: false
+        typical_p: 1
+        use_bfloat16: false
+        vision_use_head: false
+vllm_enable_sleep_mode:
+    value: false
+vllm_gpu_memory_utilization:
+    value: 0.3
+vllm_guided_decoding_regex:
+    value: null
+vllm_importance_sampling_cap:
+    value: 2
+vllm_importance_sampling_correction:
+    value: false
+vllm_mode:
+    value: colocate
+vllm_model_impl:
+    value: vllm
+vllm_sampling_params:
+    value: null
+vllm_server_base_url:
+    value: null
+vllm_server_host:
+    value: 0.0.0.0
+vllm_server_port:
+    value: 8000
+vllm_server_timeout:
+    value: 240
+vllm_tensor_parallel_size:
+    value: 1
+wandb_log_unique_prompts:
+    value: false
+warmup_ratio:
+    value: 0.1
+warmup_steps:
+    value: 0
+weight_decay:
+    value: 0.1

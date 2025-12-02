@@ -1,0 +1,117 @@
+_wandb:
+    value:
+        cli_version: 0.23.0
+        e:
+            h58suxd79xdf1mua8c4ahwhmlj6wcd5f:
+                codePath: unsloth_test/grpo_test.py
+                codePathLocal: grpo_test.py
+                cpu_count: 48
+                cpu_count_logical: 96
+                cudaVersion: "12.9"
+                disk:
+                    /:
+                        total: "32212254720"
+                        used: "358477824"
+                email: mvideet@gmail.com
+                executable: /workspace/GRPO4VLM/.venv/bin/python
+                git:
+                    commit: eabc59bc0371c5da9dbec79c6853362056f14d97
+                    remote: https://github.com/mvideet/GRPO4VLM.git
+                gpu: NVIDIA A40
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 10752
+                      memoryTotal: "48305799168"
+                      name: NVIDIA A40
+                      uuid: GPU-1f0feb6a-fab5-5855-1688-5682b31c552c
+                host: 0c557e504ca0
+                memory:
+                    total: "540644200448"
+                os: Linux-6.8.0-64-generic-x86_64-with-glibc2.39
+                program: /workspace/GRPO4VLM/unsloth_test/grpo_test.py
+                python: CPython 3.12.3
+                root: /workspace/GRPO4VLM/unsloth_test
+                startedAt: "2025-12-02T05:31:20.760988Z"
+                writerId: h58suxd79xdf1mua8c4ahwhmlj6wcd5f
+        m: []
+        python_version: 3.12.3
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 63
+                - 71
+                - 84
+                - 95
+                - 98
+                - 105
+            "2":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 63
+                - 71
+                - 84
+                - 95
+                - 98
+                - 105
+            "3":
+                - 13
+                - 16
+            "4": 3.12.3
+            "5": 0.23.0
+            "6": 4.57.3
+            "12": 0.23.0
+            "13": linux-x86_64
+batch_size:
+    value: 1
+curriculum_start_level:
+    value: 0
+curriculum_steps_per_level:
+    value: 50
+efficiency_bonus:
+    value: 0.1
+format_reward:
+    value: 1
+gradient_accumulation_steps:
+    value: 2
+learning_rate:
+    value: 5e-06
+lora_r:
+    value: 16
+max_completion_length:
+    value: 512
+max_prompt_length:
+    value: 1024
+max_steps:
+    value: 200
+maze_sizes:
+    value:
+        - - 5
+          - 5
+        - - 7
+          - 7
+        - - 10
+          - 10
+model:
+    value: gemma-3-4b-it
+num_generations:
+    value: 4
+partial_credit_weight:
+    value: 1
+save_steps:
+    value: 50
+solve_reward:
+    value: 10
+use_curriculum:
+    value: true

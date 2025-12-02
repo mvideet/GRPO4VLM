@@ -1,0 +1,207 @@
+[34m[1mwandb[0m: Detected [huggingface_hub.inference, openai] in use.
+[34m[1mwandb[0m: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+[34m[1mwandb[0m: For more information, check out the docs at: https://weave-docs.wandb.ai/
+==((====))==  Unsloth 2025.11.6: Fast Gemma3 patching. Transformers: 4.57.3.
+   \\   /|    NVIDIA A40. Num GPUs = 1. Max memory: 44.422 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.9.1+cu128. CUDA: 8.6. CUDA Toolkit: 12.8. Triton: 3.5.1
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.33.post1. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+Unsloth: Gemma3 does not support SDPA - switching to fast eager.
+Unsloth: Making `model.base_model.model.model.language_model` require gradients
+  Model: unsloth/gemma-3-4b-it
+  LoRA rank: 16
+
+[2/5] Generating maze dataset...
+  Generated 300 mazes
+  Maze sizes: [(5, 5), (7, 7), (10, 10)]
+
+  Saving maze images to maze_images/...
+  Saved 300 maze images to maze_images/
+
+[3/5] Preparing dataset...
+Map: 100%|████████████████████████████████████████████████████████████████| 300/300 [00:01<00:00, 169.98 examples/s]
+Filter: 100%|████████████████████████████████████████████████████████████| 300/300 [00:00<00:00, 1105.90 examples/s]
+
+🎓 Curriculum Learning: Starting at Level 0 (Maze size: (5, 5))
+  Will advance every 50 steps
+  Dataset ready with 100 examples
+
+  Sample prompt (truncated):
+  --------------------------------------------------
+  <bos><start_of_turn>user
+You are a maze-solving AI. You will be shown an image of a maze and must navigate from the green circle (start) to the red circle (goal).
+
+The maze uses a grid system where:
+- Black cells are walls (impassable)
+- White cells are paths (walkable)
+- Green circle = your current position (agent)
+- Red circle = goal position
+
+Available actions: UP, DOWN, LEFT, RIGHT
+
+Output format:
+1. First, provide your reasoning about the maze layout and optimal path inside <REASONING> and ...
+
+[4/5] Configuring GRPO trainer...
+  Training configuration:
+    Learning rate: 5e-06
+    Batch size: 4
+    Gradient accumulation: 2
+    Max steps: 200
+
+[5/5] Starting training...
+============================================================
+Watch the 'reward' column - it should increase over time!
+Be patient - first 50-100 steps may show low rewards.
+============================================================
+The model is already on multiple devices. Skipping the move to device specified in `args`.
+==((====))==  Unsloth - 2x faster free finetuning | Num GPUs used = 1
+   \\   /|    Num examples = 100 | Num Epochs = 4 | Total steps = 200
+O^O/ \_/ \    Batch size per device = 4 | Gradient accumulation steps = 2
+\        /    Data Parallel GPUs = 1 | Total batch size (4 x 2 x 1) = 8
+ "-____-"     Trainable parameters = 29,802,496 of 4,329,881,968 (0.69% trained)
+  0%|                                                                                       | 0/200 [00:00<?, ?it/s]`generation_config` default values have been modified to match model-specific defaults: {'top_p': 0.95}. If this is not desired, please set these values explicitly.
+Unsloth: Will smartly offload gradients to save VRAM!
+ 10%|███████▌                                                                    | 20/200 [08:01<1:03:24, 21.14s/it]Traceback (most recent call last):
+{'loss': 0.0, 'grad_norm': 1.650968442845624e-05, 'learning_rate': 0.0, 'num_tokens': 5256.0, 'completions/mean_length': 98.0, 'completions/min_length': 76.0, 'completions/max_length': 108.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.0, 'completions/min_terminated_length': 76.0, 'completions/max_terminated_length': 108.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 98.0, 'kl': 0.0007899934716988355, 'epoch': 0.02}
+{'loss': 0.0, 'grad_norm': 4.943755629938096e-05, 'learning_rate': 2.5000000000000004e-07, 'num_tokens': 10459.0, 'completions/mean_length': 91.375, 'completions/min_length': 78.0, 'completions/max_length': 111.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 91.375, 'completions/min_terminated_length': 78.0, 'completions/max_terminated_length': 111.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 91.375, 'kl': 0.0011991946958005428, 'epoch': 0.04}
+{'loss': 0.0, 'grad_norm': 1.488462930865353e-05, 'learning_rate': 5.000000000000001e-07, 'num_tokens': 15735.0, 'completions/mean_length': 100.5, 'completions/min_length': 80.0, 'completions/max_length': 121.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 100.5, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 121.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 100.5, 'kl': 0.000583597196964547, 'epoch': 0.06}
+{'loss': 0.0, 'grad_norm': 4.4040847569704056e-05, 'learning_rate': 7.5e-07, 'num_tokens': 20955.0, 'completions/mean_length': 93.5, 'completions/min_length': 77.0, 'completions/max_length': 114.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 93.5, 'completions/min_terminated_length': 77.0, 'completions/max_terminated_length': 114.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 93.5, 'kl': 0.0012982707121409476, 'epoch': 0.08}
+{'loss': 0.0, 'grad_norm': 2.025792491622269e-05, 'learning_rate': 1.0000000000000002e-06, 'num_tokens': 26251.0, 'completions/mean_length': 103.0, 'completions/min_length': 87.0, 'completions/max_length': 117.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 103.0, 'completions/min_terminated_length': 87.0, 'completions/max_terminated_length': 117.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 103.0, 'kl': 0.0006406382599379867, 'epoch': 0.1}
+{'loss': 0.0, 'grad_norm': 8.953441283665597e-05, 'learning_rate': 1.25e-06, 'num_tokens': 31507.0, 'completions/mean_length': 98.0, 'completions/min_length': 80.0, 'completions/max_length': 118.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.0, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 118.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 98.0, 'kl': 0.0022615482739638537, 'epoch': 0.12}
+{'loss': 0.0, 'grad_norm': 4.547453863779083e-05, 'learning_rate': 1.5e-06, 'num_tokens': 36836.0, 'completions/mean_length': 107.125, 'completions/min_length': 85.0, 'completions/max_length': 136.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 107.125, 'completions/min_terminated_length': 85.0, 'completions/max_terminated_length': 136.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 107.125, 'kl': 0.0015706181875430048, 'epoch': 0.14}
+{'loss': 0.0, 'grad_norm': 2.097998367389664e-05, 'learning_rate': 1.75e-06, 'num_tokens': 42145.0, 'completions/mean_length': 104.625, 'completions/min_length': 80.0, 'completions/max_length': 120.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 104.625, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 120.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 104.625, 'kl': 0.0011629711370915174, 'epoch': 0.16}
+{'loss': 0.0, 'grad_norm': 6.011886944179423e-05, 'learning_rate': 2.0000000000000003e-06, 'num_tokens': 47401.0, 'completions/mean_length': 98.0, 'completions/min_length': 81.0, 'completions/max_length': 119.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.0, 'completions/min_terminated_length': 81.0, 'completions/max_terminated_length': 119.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 98.0, 'kl': 0.0011151786311529577, 'epoch': 0.18}
+{'loss': 0.0, 'grad_norm': 3.1159470381680876e-05, 'learning_rate': 2.25e-06, 'num_tokens': 52646.0, 'completions/mean_length': 96.625, 'completions/min_length': 82.0, 'completions/max_length': 115.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 96.625, 'completions/min_terminated_length': 82.0, 'completions/max_terminated_length': 115.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 96.625, 'kl': 0.0009247704583685845, 'epoch': 0.2}
+{'loss': 0.0, 'grad_norm': 2.2287280444288626e-05, 'learning_rate': 2.5e-06, 'num_tokens': 57884.0, 'completions/mean_length': 95.75, 'completions/min_length': 67.0, 'completions/max_length': 110.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 95.75, 'completions/min_terminated_length': 67.0, 'completions/max_terminated_length': 110.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 95.75, 'kl': 0.0008275093568954617, 'epoch': 0.22}
+{'loss': 0.0, 'grad_norm': 0.00010894516890402883, 'learning_rate': 2.7500000000000004e-06, 'num_tokens': 63112.0, 'completions/mean_length': 94.5, 'completions/min_length': 79.0, 'completions/max_length': 117.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 94.5, 'completions/min_terminated_length': 79.0, 'completions/max_terminated_length': 117.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 94.5, 'kl': 0.0014556429523508996, 'epoch': 0.24}
+{'loss': 0.0, 'grad_norm': 2.7634750949800946e-05, 'learning_rate': 3e-06, 'num_tokens': 68393.0, 'completions/mean_length': 101.125, 'completions/min_length': 84.0, 'completions/max_length': 122.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 101.125, 'completions/min_terminated_length': 84.0, 'completions/max_terminated_length': 122.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 101.125, 'kl': 0.0008849949226714671, 'epoch': 0.26}
+{'loss': 0.0, 'grad_norm': 3.146928793285042e-05, 'learning_rate': 3.2500000000000002e-06, 'num_tokens': 73651.0, 'completions/mean_length': 98.25, 'completions/min_length': 81.0, 'completions/max_length': 115.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.25, 'completions/min_terminated_length': 81.0, 'completions/max_terminated_length': 115.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 98.25, 'kl': 0.0007985922566149384, 'epoch': 0.28}
+{'loss': 0.0, 'grad_norm': 2.0859873984591104e-05, 'learning_rate': 3.5e-06, 'num_tokens': 78942.0, 'completions/mean_length': 102.375, 'completions/min_length': 82.0, 'completions/max_length': 140.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 102.375, 'completions/min_terminated_length': 82.0, 'completions/max_terminated_length': 140.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 102.375, 'kl': 0.001097427390050143, 'epoch': 0.3}
+{'loss': 0.0, 'grad_norm': 0.00014481283142231405, 'learning_rate': 3.7500000000000005e-06, 'num_tokens': 84249.0, 'completions/mean_length': 104.375, 'completions/min_length': 76.0, 'completions/max_length': 132.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 104.375, 'completions/min_terminated_length': 76.0, 'completions/max_terminated_length': 132.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 104.375, 'kl': 0.0021742285462096334, 'epoch': 0.32}
+{'loss': 0.0, 'grad_norm': 2.1927875422989018e-05, 'learning_rate': 4.000000000000001e-06, 'num_tokens': 89464.0, 'completions/mean_length': 92.875, 'completions/min_length': 85.0, 'completions/max_length': 103.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 92.875, 'completions/min_terminated_length': 85.0, 'completions/max_terminated_length': 103.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 92.875, 'kl': 0.000854757527122274, 'epoch': 0.34}
+{'loss': 0.0, 'grad_norm': 4.936046025250107e-05, 'learning_rate': 4.25e-06, 'num_tokens': 94716.0, 'completions/mean_length': 97.5, 'completions/min_length': 76.0, 'completions/max_length': 126.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 97.5, 'completions/min_terminated_length': 76.0, 'completions/max_terminated_length': 126.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 97.5, 'kl': 0.0015836505335755646, 'epoch': 0.36}
+{'loss': 0.0, 'grad_norm': 2.3518385205534287e-05, 'learning_rate': 4.5e-06, 'num_tokens': 99940.0, 'completions/mean_length': 94.0, 'completions/min_length': 62.0, 'completions/max_length': 112.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 94.0, 'completions/min_terminated_length': 62.0, 'completions/max_terminated_length': 112.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 94.0, 'kl': 0.0009713273902889341, 'epoch': 0.38}
+{'loss': 0.0, 'grad_norm': 0.00012077400606358424, 'learning_rate': 4.75e-06, 'num_tokens': 105191.0, 'completions/mean_length': 97.375, 'completions/min_length': 80.0, 'completions/max_length': 119.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 97.375, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 119.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 0.0, 'rewards/maze_execution_reward_func/std': 0.0, 'reward': 2.0, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 97.375, 'kl': 0.001681099005509168, 'epoch': 0.4}
+  File "/workspace/GRPO4VLM/unsloth_test/grpo_test.py", line 1362, in <module>
+  File "/workspace/GRPO4VLM/unsloth_test/grpo_test.py", line 1237, in main
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 55, in wrapper
+    output = f(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 2325, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 328, in _fast_inner_training_loop
+  File "<string>", line 34, in _unsloth_training_step
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/trl/extras/profiling.py", line 98, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2252, in _prepare_inputs
+    generation_batch = self._generate_and_score_completions(generation_batch)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2639, in _generate_and_score_completions
+    ) = self._generate(prompts, images)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2581, in _generate
+    prompt_ids, completion_ids, logprobs, forward_kwargs = self._generate_single_turn(prompts, images)
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2557, in _generate_single_turn
+    prompt_completion_ids = unwrapped_model.generate(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth/models/rl.py", line 74, in generate_with_clone
+    out = original_generate(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/peft/peft_model.py", line 2048, in generate
+    outputs = self.base_model.generate(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth/models/vision.py", line 296, in unsloth_base_fast_generate
+    output = self._old_generate(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/generation/utils.py", line 2564, in generate
+    result = decoding_method(
+             ^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/generation/utils.py", line 2787, in _sample
+    outputs = model_forward(**model_inputs, return_dict=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/unsloth_compiled_cache/unsloth_compiled_module_gemma3.py", line 900, in forward
+    return Gemma3ForConditionalGeneration_forward(self, input_ids, pixel_values, attention_mask, position_ids, past_key_values, token_type_ids, cache_position, inputs_embeds, labels, use_cache, output_attentions, output_hidden_states, return_dict, logits_to_keep, **lm_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_dynamo/external_utils.py", line 196, in nonrecursive_disable_wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/unsloth_compiled_cache/unsloth_compiled_module_gemma3.py", line 710, in Gemma3ForConditionalGeneration_forward
+    outputs = self.model(
+              ^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 957, in forward
+    outputs = self.language_model(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 570, in forward
+    layer_outputs = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 393, in forward
+    hidden_states = self.post_attention_layernorm(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 832, in compile_wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth_zoo/temporary_patches/gemma.py", line 545, in forward
+    def forward(self, x):
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1044, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1130, in forward
+    return compiled_fn(full_args)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 353, in runtime_wrapper
+    all_outs = call_func_at_runtime_with_args(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 129, in call_func_at_runtime_with_args
+    out = normalize_as_list(f(args))
+                            ^^^^^^^
+KeyboardInterrupt

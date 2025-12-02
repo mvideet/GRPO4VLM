@@ -1,0 +1,40 @@
+{
+  "os": "Linux-6.8.0-64-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.12.3",
+  "startedAt": "2025-12-02T15:40:20.523976Z",
+  "program": "/workspace/GRPO4VLM/unsloth_test/train.py",
+  "codePath": "unsloth_test/train.py",
+  "codePathLocal": "train.py",
+  "git": {
+    "remote": "https://github.com/mvideet/GRPO4VLM.git",
+    "commit": "eabc59bc0371c5da9dbec79c6853362056f14d97"
+  },
+  "email": "mvideet@gmail.com",
+  "root": "/workspace/GRPO4VLM/unsloth_test",
+  "host": "0c557e504ca0",
+  "executable": "/workspace/GRPO4VLM/.venv/bin/python",
+  "cpu_count": 48,
+  "cpu_count_logical": 96,
+  "gpu": "NVIDIA A40",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "32212254720",
+      "used": "363810816"
+    }
+  },
+  "memory": {
+    "total": "540644200448"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA A40",
+      "memoryTotal": "48305799168",
+      "cudaCores": 10752,
+      "architecture": "Ampere",
+      "uuid": "GPU-1f0feb6a-fab5-5855-1688-5682b31c552c"
+    }
+  ],
+  "cudaVersion": "12.9",
+  "writerId": "mzw8neuor2yempxv7x37hk1kb1631iih"
+}

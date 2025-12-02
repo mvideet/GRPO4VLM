@@ -1,0 +1,184 @@
+[34m[1mwandb[0m: Detected [huggingface_hub.inference, openai] in use.
+[34m[1mwandb[0m: Use W&B Weave for improved LLM call tracing. Install Weave with `pip install weave` then add `import weave` to the top of your script.
+[34m[1mwandb[0m: For more information, check out the docs at: https://weave-docs.wandb.ai/
+==((====))==  Unsloth 2025.11.6: Fast Gemma3 patching. Transformers: 4.57.3.
+   \\   /|    NVIDIA A40. Num GPUs = 1. Max memory: 44.422 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.9.1+cu128. CUDA: 8.6. CUDA Toolkit: 12.8. Triton: 3.5.1
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.33.post1. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+Unsloth: Gemma3 does not support SDPA - switching to fast eager.
+Unsloth: Making `model.base_model.model.model.language_model` require gradients
+  Model: unsloth/gemma-3-4b-it
+  LoRA rank: 16
+
+[2/5] Generating maze dataset...
+  Generated 300 mazes
+  Maze sizes: [(5, 5), (7, 7), (10, 10)]
+
+  Saving maze images to maze_images/...
+  Saved 300 maze images to maze_images/
+
+[3/5] Preparing dataset...
+Map: 100%|████████████████████████████████████████████████████████████████| 300/300 [00:01<00:00, 176.55 examples/s]
+Filter: 100%|████████████████████████████████████████████████████████████| 300/300 [00:00<00:00, 1141.05 examples/s]
+
+🎓 Curriculum Learning: Starting at Level 0 (Maze size: (5, 5))
+  Will advance every 50 steps
+  Dataset ready with 100 examples
+
+  Sample prompt (truncated):
+  --------------------------------------------------
+  <bos><start_of_turn>user
+You are a maze-solving AI. You will be shown an image of a maze and must navigate from the green circle (start) to the red circle (goal).
+
+The maze uses a grid system where:
+- Black cells are walls (impassable)
+- White cells are paths (walkable)
+- Green circle = your current position (agent)
+- Red circle = goal position
+
+Available actions: UP, DOWN, LEFT, RIGHT
+
+Output format:
+1. First, provide your reasoning about the maze layout and optimal path inside <REASONING> and ...
+
+[4/5] Configuring GRPO trainer...
+  Training configuration:
+    Learning rate: 5e-06
+    Batch size: 4
+    Gradient accumulation: 2
+    Max steps: 200
+
+[5/5] Starting training...
+============================================================
+Watch the 'reward' column - it should increase over time!
+Be patient - first 50-100 steps may show low rewards.
+============================================================
+The model is already on multiple devices. Skipping the move to device specified in `args`.
+==((====))==  Unsloth - 2x faster free finetuning | Num GPUs used = 1
+   \\   /|    Num examples = 100 | Num Epochs = 4 | Total steps = 200
+O^O/ \_/ \    Batch size per device = 4 | Gradient accumulation steps = 2
+\        /    Data Parallel GPUs = 1 | Total batch size (4 x 2 x 1) = 8
+ "-____-"     Trainable parameters = 29,802,496 of 4,329,881,968 (0.69% trained)
+  0%|                                                                                       | 0/200 [00:00<?, ?it/s]`generation_config` default values have been modified to match model-specific defaults: {'top_p': 0.95}. If this is not desired, please set these values explicitly.
+Unsloth: Will smartly offload gradients to save VRAM!
+  4%|██▋                                                                          | 7/200 [03:06<1:10:43, 21.99s/it]Traceback (most recent call last):
+{'loss': -0.0015, 'grad_norm': 0.0903683751821518, 'learning_rate': 0.0, 'num_tokens': 5256.0, 'completions/mean_length': 98.0, 'completions/min_length': 76.0, 'completions/max_length': 108.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 98.0, 'completions/min_terminated_length': 76.0, 'completions/max_terminated_length': 108.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 2.109375, 'rewards/maze_execution_reward_func/std': 0.5725783705711365, 'reward': 4.109375, 'reward_std': 0.5170938968658447, 'frac_reward_zero_std': 0.0, 'completion_length': 98.0, 'kl': 0.0007899934716988355, 'epoch': 0.02}
+{'loss': -0.0065, 'grad_norm': 0.1204095408320427, 'learning_rate': 2.5000000000000004e-07, 'num_tokens': 10459.0, 'completions/mean_length': 91.375, 'completions/min_length': 78.0, 'completions/max_length': 111.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 91.375, 'completions/min_terminated_length': 78.0, 'completions/max_terminated_length': 111.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 1.796875, 'rewards/maze_execution_reward_func/std': 0.5215768814086914, 'reward': 3.796875, 'reward_std': 0.39322054386138916, 'frac_reward_zero_std': 0.5, 'completion_length': 91.375, 'kl': 0.0011991946958005428, 'epoch': 0.04}
+{'loss': -0.0062, 'grad_norm': 0.08607944846153259, 'learning_rate': 5.000000000000001e-07, 'num_tokens': 15730.0, 'completions/mean_length': 99.875, 'completions/min_length': 80.0, 'completions/max_length': 119.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 99.875, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 119.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 1.796875, 'rewards/maze_execution_reward_func/std': 0.22097088396549225, 'reward': 3.796875, 'reward_std': 0.15625, 'frac_reward_zero_std': 0.5, 'completion_length': 99.875, 'kl': 0.0007270083297044039, 'epoch': 0.06}
+{'loss': -0.0081, 'grad_norm': 0.1353476643562317, 'learning_rate': 7.5e-07, 'num_tokens': 21010.0, 'completions/mean_length': 101.0, 'completions/min_length': 80.0, 'completions/max_length': 122.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 101.0, 'completions/min_terminated_length': 80.0, 'completions/max_terminated_length': 122.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 1.875, 'rewards/maze_execution_reward_func/std': 0.47245559096336365, 'reward': 3.875, 'reward_std': 0.5103103518486023, 'frac_reward_zero_std': 0.0, 'completion_length': 101.0, 'kl': 0.0009503228357061744, 'epoch': 0.08}
+{'loss': 0.0057, 'grad_norm': 0.0952807292342186, 'learning_rate': 1.0000000000000002e-06, 'num_tokens': 26240.0, 'completions/mean_length': 94.75, 'completions/min_length': 79.0, 'completions/max_length': 111.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 94.75, 'completions/min_terminated_length': 79.0, 'completions/max_terminated_length': 111.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 1.25, 'rewards/maze_execution_reward_func/std': 0.7470179200172424, 'reward': 3.25, 'reward_std': 0.25515517592430115, 'frac_reward_zero_std': 0.5, 'completion_length': 94.75, 'kl': 0.0010066350077977404, 'epoch': 0.1}
+{'loss': 0.0027, 'grad_norm': 0.13078467547893524, 'learning_rate': 1.25e-06, 'num_tokens': 31538.0, 'completions/mean_length': 103.25, 'completions/min_length': 86.0, 'completions/max_length': 123.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 103.25, 'completions/min_terminated_length': 86.0, 'completions/max_terminated_length': 123.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 1.875, 'rewards/maze_execution_reward_func/std': 0.5786375403404236, 'reward': 3.875, 'reward_std': 0.6159991025924683, 'frac_reward_zero_std': 0.0, 'completion_length': 103.25, 'kl': 0.001136664388468489, 'epoch': 0.12}
+{'loss': 0.0, 'grad_norm': 1.6948913980741054e-05, 'learning_rate': 1.5e-06, 'num_tokens': 36826.0, 'completions/mean_length': 102.0, 'completions/min_length': 89.0, 'completions/max_length': 121.0, 'completions/clipped_ratio': 0.0, 'completions/mean_terminated_length': 102.0, 'completions/min_terminated_length': 89.0, 'completions/max_terminated_length': 121.0, 'rewards/formatting_reward_func/mean': 2.0, 'rewards/formatting_reward_func/std': 0.0, 'rewards/maze_execution_reward_func/mean': 2.1875, 'rewards/maze_execution_reward_func/std': 0.33407655358314514, 'reward': 4.1875, 'reward_std': 0.0, 'frac_reward_zero_std': 1.0, 'completion_length': 102.0, 'kl': 0.0009401041315868497, 'epoch': 0.14}
+  File "/workspace/GRPO4VLM/unsloth_test/train.py", line 228, in <module>
+    main()
+  File "/workspace/GRPO4VLM/unsloth_test/train.py", line 212, in main
+    trainer.train()
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 55, in wrapper
+    output = f(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/trainer.py", line 2325, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 328, in _fast_inner_training_loop
+  File "<string>", line 34, in _unsloth_training_step
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/trl/extras/profiling.py", line 98, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2252, in _prepare_inputs
+    generation_batch = self._generate_and_score_completions(generation_batch)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2639, in _generate_and_score_completions
+    ) = self._generate(prompts, images)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2581, in _generate
+    prompt_ids, completion_ids, logprobs, forward_kwargs = self._generate_single_turn(prompts, images)
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/unsloth_test/unsloth_compiled_cache/UnslothGRPOTrainer.py", line 2557, in _generate_single_turn
+    prompt_completion_ids = unwrapped_model.generate(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth/models/rl.py", line 74, in generate_with_clone
+    out = original_generate(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/peft/peft_model.py", line 2048, in generate
+    outputs = self.base_model.generate(*args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth/models/vision.py", line 296, in unsloth_base_fast_generate
+    output = self._old_generate(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/generation/utils.py", line 2564, in generate
+    result = decoding_method(
+             ^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/generation/utils.py", line 2787, in _sample
+    outputs = model_forward(**model_inputs, return_dict=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/unsloth_compiled_cache/unsloth_compiled_module_gemma3.py", line 900, in forward
+    return Gemma3ForConditionalGeneration_forward(self, input_ids, pixel_values, attention_mask, position_ids, past_key_values, token_type_ids, cache_position, inputs_embeds, labels, use_cache, output_attentions, output_hidden_states, return_dict, logits_to_keep, **lm_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_dynamo/external_utils.py", line 196, in nonrecursive_disable_wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/unsloth_compiled_cache/unsloth_compiled_module_gemma3.py", line 710, in Gemma3ForConditionalGeneration_forward
+    outputs = self.model(
+              ^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 957, in forward
+    outputs = self.language_model(
+              ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 570, in forward
+    layer_outputs = decoder_layer(
+                    ^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/transformers/models/gemma3/modeling_gemma3.py", line 393, in forward
+    hidden_states = self.post_attention_layernorm(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 832, in compile_wrapper
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/workspace/GRPO4VLM/.venv/lib/python3.12/site-packages/unsloth_zoo/temporary_patches/gemma.py", line 545, in forward
+    def forward(self, x):
+KeyboardInterrupt
