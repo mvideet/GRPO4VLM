@@ -1,0 +1,53 @@
+# Model weights and checkpoints
+unsloth_test/maze_grpo_outputs/
+unsloth_test/maze_solver_lora/
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.ckpt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Wandb
+wandb/
+*.wandb
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Compiled cache
+unsloth_test/unsloth_compiled_cache/
+
+# Maze images (optional - uncomment if you don't want to track these)
+# unsloth_test/maze_images/
+
