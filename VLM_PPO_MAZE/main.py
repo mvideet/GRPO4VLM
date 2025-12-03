@@ -287,8 +287,6 @@ def main():
                     running_step_count[i] = 0
                     
                     # Record episode for curriculum learning
-                    if curriculum is not None:
-                        curriculum.record_episode(is_success)
             # bad_mask is a legacy implementation of the storage.py file
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])

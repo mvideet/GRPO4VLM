@@ -196,23 +196,23 @@ def text_projection(text_actions: List[str], env_name):
                 output_indices.append(random.randint(0, len(action_list) - 1))
         else:
             # For other environments, use original logic
-            if action_index != -1:
+        if action_index != -1:
                 string = string_lower[action_index:]
-            contained_actions = []
-            # For the 'gym_cards/Points24-v0' environment, handle '10' separately
-            if 'points' in env_name.lower() and '10' in string:
-                contained_actions.append('10')
-                string = string.replace('10', '')  # Remove '10' to prevent it from being counted as '1'
-            # Find all actions that are contained in the string
-            for action in action_list:
-                if action in string:
-                    contained_actions.append(action)
-            # Remove duplicates by converting to a set and back to a list
-            contained_actions = list(set(contained_actions))
-            if len(contained_actions) == 1 and contained_actions[0] in action_list:
-                # Only one keyword from action_list is in the string
-                output_indices.append(action_list.index(contained_actions[0]))
-            else:
-                # The string contains none or multiple keywords, randomly select an index from action_list
-                output_indices.append(random.randint(0, len(action_list) - 1))
+        contained_actions = []
+        # For the 'gym_cards/Points24-v0' environment, handle '10' separately
+        if 'points' in env_name.lower() and '10' in string:
+            contained_actions.append('10')
+            string = string.replace('10', '')  # Remove '10' to prevent it from being counted as '1'
+        # Find all actions that are contained in the string
+        for action in action_list:
+            if action in string:
+                contained_actions.append(action)
+        # Remove duplicates by converting to a set and back to a list
+        contained_actions = list(set(contained_actions))
+        if len(contained_actions) == 1 and contained_actions[0] in action_list:
+            # Only one keyword from action_list is in the string
+            output_indices.append(action_list.index(contained_actions[0]))
+        else:
+            # The string contains none or multiple keywords, randomly select an index from action_list
+            output_indices.append(random.randint(0, len(action_list) - 1))
     return torch.Tensor([output_indices]).long().reshape(-1, 1)
