@@ -35,8 +35,28 @@ class PPO():
         self.accelerator = accelerator
 
     def update(self, rollouts):
+        # Check for NaN/Inf in returns and value_preds BEFORE computing advantages
+        if torch.isnan(rollouts.returns[:-1]).any() or torch.isinf(rollouts.returns[:-1]).any():
+            print(f"ERROR: NaN/Inf detected in rollouts.returns[:-1]")
+            print(f"Returns stats: min={rollouts.returns[:-1].min()}, max={rollouts.returns[:-1].max()}, mean={rollouts.returns[:-1].mean()}")
+            print(f"NaN count: {torch.isnan(rollouts.returns[:-1]).sum()}, Inf count: {torch.isinf(rollouts.returns[:-1]).sum()}")
+        
+        if torch.isnan(rollouts.value_preds[:-1]).any() or torch.isinf(rollouts.value_preds[:-1]).any():
+            print(f"ERROR: NaN/Inf detected in rollouts.value_preds[:-1]")
+            print(f"Value_preds stats: min={rollouts.value_preds[:-1].min()}, max={rollouts.value_preds[:-1].max()}, mean={rollouts.value_preds[:-1].mean()}")
+            print(f"NaN count: {torch.isnan(rollouts.value_preds[:-1]).sum()}, Inf count: {torch.isinf(rollouts.value_preds[:-1]).sum()}")
+        
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
         advantages = advantages.detach()  # Detach to free computation graph
+        
+        # Check for NaN/Inf in advantages AFTER computation
+        if torch.isnan(advantages).any() or torch.isinf(advantages).any():
+            print(f"ERROR: NaN/Inf detected in advantages after computation")
+            print(f"Advantages stats: min={advantages.min()}, max={advantages.max()}, mean={advantages.mean()}, std={advantages.std()}")
+            print(f"NaN count: {torch.isnan(advantages).sum()}, Inf count: {torch.isinf(advantages).sum()}")
+            # Replace NaN/Inf with zeros to prevent training crash
+            advantages = torch.where(torch.isnan(advantages) | torch.isinf(advantages), 
+                                    torch.zeros_like(advantages), advantages)
 
         value_loss_epoch = 0
         action_loss_epoch = 0
@@ -54,23 +74,58 @@ class PPO():
                     
                     # Normalize advantages per batch (subtract mean, divide by std)
                     if adv_targ is not None:
-                        adv_targ = (adv_targ - adv_targ.mean()) / (adv_targ.std() + 1e-5)
+                        adv_mean = adv_targ.mean()
+                        adv_std = adv_targ.std()
+                        # Check for NaN/Inf in advantages before normalization
+                        if torch.isnan(adv_mean) or torch.isinf(adv_mean) or torch.isnan(adv_std) or torch.isinf(adv_std):
+                            print(f"Warning: NaN/Inf in advantages, skipping batch. Mean: {adv_mean}, Std: {adv_std}")
+                            continue
+                        # Clamp std to avoid division by very small numbers
+                        adv_std = torch.clamp(adv_std, min=1e-5)
+                        adv_targ = (adv_targ - adv_mean) / adv_std
+                    
+                    # Check for NaN/Inf in advantages after normalization
+                    if adv_targ is not None and (torch.isnan(adv_targ).any() or torch.isinf(adv_targ).any()):
+                        print("Warning: NaN/Inf in normalized advantages, skipping batch")
+                        continue
+                    
                     # Reshape to do in a single forward pass for all steps
                     values, action_log_probs = self.actor_critic.evaluate_actions(
                         obs_batch, output_ids_batch)
                     #values and action_log_probs on two different devices!! because they come from two llava
-                    if torch.isnan(action_log_probs).any():
-                        # Skip this batch if NaN detected, but don't increment grad_step
+                    
+                    # Check for NaN/Inf in model outputs
+                    if torch.isnan(action_log_probs).any() or torch.isinf(action_log_probs).any():
+                        print("Warning: NaN/Inf in action_log_probs, skipping batch")
                         continue
+                    if torch.isnan(values).any() or torch.isinf(values).any():
+                        print("Warning: NaN/Inf in values, skipping batch")
+                        continue
+                    
                     grad_step += 1  # Only increment after NaN check
                     old_action_log_probs_batch = old_action_log_probs_batch.to(action_log_probs.device).view(-1)
                     adv_targ = adv_targ.to(action_log_probs.device)
                     value_preds_batch = value_preds_batch.to(values.device)
                     return_batch = return_batch.to(values.device)
+                    
+                    # Check for NaN/Inf in returns and value_preds
+                    if torch.isnan(return_batch).any() or torch.isinf(return_batch).any():
+                        print("Warning: NaN/Inf in return_batch, skipping batch")
+                        continue
+                    if torch.isnan(value_preds_batch).any() or torch.isinf(value_preds_batch).any():
+                        print("Warning: NaN/Inf in value_preds_batch, skipping batch")
+                        continue
 
-
-                    ratio = torch.exp(action_log_probs -
-                                    old_action_log_probs_batch)
+                    # Clamp action_log_probs difference to avoid extreme ratios
+                    log_prob_diff = action_log_probs - old_action_log_probs_batch
+                    log_prob_diff = torch.clamp(log_prob_diff, min=-10.0, max=10.0)
+                    ratio = torch.exp(log_prob_diff)
+                    
+                    # Clamp ratio to prevent extreme values
+                    ratio = torch.clamp(ratio, min=1e-8, max=100.0)
+                    
+                    # Clamp advantages to prevent extreme values
+                    adv_targ = torch.clamp(adv_targ, min=-100.0, max=100.0)
 
                     surr1 = ratio * adv_targ
                     surr2 = torch.clamp(ratio, 1.0 - self.clip_param,
@@ -80,6 +135,19 @@ class PPO():
                         action_loss = -surr2.mean()
                     else:
                         action_loss = -torch.min(surr1, surr2).mean()
+                    
+                    # Check for NaN/Inf in surr1, surr2, action_loss
+                    if torch.isnan(surr1).any() or torch.isinf(surr1).any() or \
+                       torch.isnan(surr2).any() or torch.isinf(surr2).any() or \
+                       torch.isnan(action_loss) or torch.isinf(action_loss):
+                        print(f"Warning: NaN/Inf in action loss computation, skipping batch")
+                        self.optimizer.zero_grad()
+                        continue
+                    # Clamp values and returns to prevent extreme differences
+                    values = torch.clamp(values, min=-1e6, max=1e6)
+                    return_batch = torch.clamp(return_batch, min=-1e6, max=1e6)
+                    value_preds_batch = torch.clamp(value_preds_batch, min=-1e6, max=1e6)
+                    
                     if self.use_clipped_value_loss:
                         value_pred_clipped = value_preds_batch + \
                             (values - value_preds_batch).clamp(-self.clip_param, self.clip_param)
@@ -90,13 +158,19 @@ class PPO():
                                                     value_losses_clipped).mean()
                     else:
                         value_loss = 0.5 * (return_batch - values).pow(2).mean()
+                    
+                    # Check for NaN/Inf in value_loss
+                    if torch.isnan(value_loss) or torch.isinf(value_loss):
+                        print(f"Warning: NaN/Inf in value_loss computation, skipping batch")
+                        self.optimizer.zero_grad()
+                        continue
 
-                    try:
-                        assert not torch.isnan(value_loss), "value_loss is nan"
-                        assert not torch.isnan(action_loss), "action_loss is nan"
-                    except:
-                        print("value/action loss is nan")
-                        exit(1)
+                    # Check for NaN/Inf in losses before proceeding
+                    if torch.isnan(value_loss) or torch.isinf(value_loss) or torch.isnan(action_loss) or torch.isinf(action_loss):
+                        print(f"Warning: NaN/Inf in losses (value_loss: {value_loss}, action_loss: {action_loss}), skipping batch")
+                        # Reset gradients and continue to next batch
+                        self.optimizer.zero_grad()
+                        continue
                     loss = value_loss * self.value_loss_coef+action_loss
                     self.accelerator.backward(loss)
                     if self.accelerator.sync_gradients:

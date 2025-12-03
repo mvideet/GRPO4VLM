@@ -317,9 +317,26 @@ def main():
         with torch.no_grad():
             next_value = actor_critic.get_value(
                 rollouts.obs[-1]).detach()
+            
+            # Check for NaN/Inf in next_value before compute_returns
+            if torch.isnan(next_value).any() or torch.isinf(next_value).any():
+                print(f"ERROR: NaN/Inf in next_value before compute_returns")
+                print(f"next_value stats: min={next_value.min()}, max={next_value.max()}, mean={next_value.mean()}")
+                # Replace NaN/Inf with zeros
+                next_value = torch.where(torch.isnan(next_value) | torch.isinf(next_value),
+                                        torch.zeros_like(next_value), next_value)
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
+        
+        # Check for NaN/Inf in returns and value_preds after compute_returns
+        if torch.isnan(rollouts.returns).any() or torch.isinf(rollouts.returns).any():
+            print(f"ERROR: NaN/Inf in rollouts.returns after compute_returns")
+            print(f"Returns stats: min={rollouts.returns.min()}, max={rollouts.returns.max()}, mean={rollouts.returns.mean()}")
+        
+        if torch.isnan(rollouts.value_preds).any() or torch.isinf(rollouts.value_preds).any():
+            print(f"ERROR: NaN/Inf in rollouts.value_preds after compute_returns")
+            print(f"Value_preds stats: min={rollouts.value_preds.min()}, max={rollouts.value_preds.max()}, mean={rollouts.value_preds.mean()}")
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
         lr_scheduler.step()
 

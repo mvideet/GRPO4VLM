@@ -27,6 +27,14 @@ class VLMValue(nn.Module):
             nn.ReLU(), # Non-linearity
             nn.Linear(512, 1) # Output layer
             ).to(base.device, dtype=torch.float16) # Move to specified device with dtype
+        
+        # Initialize value head weights to small values to prevent extreme outputs
+        for module in self.value_head:
+            if isinstance(module, nn.Linear):
+                # Use Xavier uniform initialization with small gain
+                nn.init.xavier_uniform_(module.weight, gain=0.1)
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0.0)
 
     def forward(self,  input_ids, image_tensor):
         if image_tensor.size(0) != 1:
@@ -40,7 +48,26 @@ class VLMValue(nn.Module):
             inputs_embeds = inputs_embeds,
             output_hidden_states=True)
         hidden_states = outputs.hidden_states
-        values = self.value_head(hidden_states[-1][:, -1])
+        last_hidden = hidden_states[-1][:, -1]
+        
+        # Check for NaN/Inf in hidden states before value head
+        if torch.isnan(last_hidden).any() or torch.isinf(last_hidden).any():
+            print(f"ERROR: NaN/Inf in hidden_states before value_head")
+            print(f"Hidden stats: min={last_hidden.min()}, max={last_hidden.max()}, mean={last_hidden.mean()}")
+            # Replace NaN/Inf with zeros
+            last_hidden = torch.where(torch.isnan(last_hidden) | torch.isinf(last_hidden),
+                                     torch.zeros_like(last_hidden), last_hidden)
+        
+        values = self.value_head(last_hidden)
+        
+        # Check for NaN/Inf in values after value head
+        if torch.isnan(values).any() or torch.isinf(values).any():
+            print(f"ERROR: NaN/Inf in values after value_head")
+            print(f"Values stats: min={values.min()}, max={values.max()}, mean={values.mean()}")
+            # Replace NaN/Inf with zeros
+            values = torch.where(torch.isnan(values) | torch.isinf(values),
+                                torch.zeros_like(values), values)
+        
         return values
 
 
