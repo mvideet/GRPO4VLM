@@ -5,7 +5,7 @@ TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True CUDA_VI
     --lr_max_steps 25 \
     --eval-num-per-episode 100 \
     --num-env-steps 50000 \
-    --num-steps 64 \
+    --num-steps 32 \
     --grad-accum-steps 32 \
     --max-new-tokens 64 \
     --thought-prob-coef 0.5 \
@@ -13,7 +13,7 @@ TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True CUDA_VI
     --seed 1 \
     --temperature 0.2 \
     --ppo-epoch 6 \
-    --mini-batch-size 4 \
+    --mini-batch-size 1 \
     --value-loss-coef 0.25 \
     --max-grad-norm 0.5 \
     --model-path mvideet1/llava-mistral-7b-finetuned \
