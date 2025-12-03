@@ -1,7 +1,6 @@
 import os
 
 import gym
-import gym_maze
 import numpy as np
 import torch
 from gym.spaces import Box
