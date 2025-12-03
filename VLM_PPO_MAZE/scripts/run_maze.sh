@@ -13,7 +13,7 @@ TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True CUDA_VI
     --seed 1 \
     --temperature 0.2 \
     --ppo-epoch 6 \
-    --mini-batch-size 1 \
+    --mini-batch-size 2 \
     --value-loss-coef 0.25 \
     --max-grad-norm 0.5 \
     --model-path mvideet1/llava-mistral-7b-finetuned \

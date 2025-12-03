@@ -75,14 +75,23 @@ class PPO():
                     # Normalize advantages per batch (subtract mean, divide by std)
                     if adv_targ is not None:
                         adv_mean = adv_targ.mean()
-                        adv_std = adv_targ.std()
+                        # Use unbiased=False to handle single-element batches correctly
+                        # For single element, std should be 0, not NaN
+                        adv_std = adv_targ.std(unbiased=False)
+                        
                         # Check for NaN/Inf in advantages before normalization
-                        if torch.isnan(adv_mean) or torch.isinf(adv_mean) or torch.isnan(adv_std) or torch.isinf(adv_std):
-                            print(f"Warning: NaN/Inf in advantages, skipping batch. Mean: {adv_mean}, Std: {adv_std}")
+                        if torch.isnan(adv_mean) or torch.isinf(adv_mean):
+                            print(f"Warning: NaN/Inf in advantage mean, skipping batch. Mean: {adv_mean}")
                             continue
-                        # Clamp std to avoid division by very small numbers
-                        adv_std = torch.clamp(adv_std, min=1e-5)
-                        adv_targ = (adv_targ - adv_mean) / adv_std
+                        
+                        # Handle case where std is NaN (single element or all same values)
+                        if torch.isnan(adv_std) or adv_std < 1e-5:
+                            # If std is NaN or very small, don't normalize (just center)
+                            # This happens when batch size is 1 or all advantages are identical
+                            adv_targ = adv_targ - adv_mean
+                        else:
+                            # Normal case: normalize by std
+                            adv_targ = (adv_targ - adv_mean) / adv_std
                     
                     # Check for NaN/Inf in advantages after normalization
                     if adv_targ is not None and (torch.isnan(adv_targ).any() or torch.isinf(adv_targ).any()):
