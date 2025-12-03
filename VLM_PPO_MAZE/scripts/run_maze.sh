@@ -1,4 +1,4 @@
-TOKENIZERS_PARALLELISM=false PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True CUDA_VISIBLE_DEVICES="0" accelerate launch --config_file config_zero2.yaml --main_process_port 29380 ../main.py \
+TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True CUDA_VISIBLE_DEVICES="0" accelerate launch --config_file config_zero2.yaml --main_process_port 29380 ../main.py \
     --env-name custom-maze-5x5 \
     --init-lr 1e-4 \
     --end-lr 1e-7 \

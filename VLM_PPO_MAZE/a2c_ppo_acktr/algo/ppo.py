@@ -106,10 +106,11 @@ class PPO():
                     self.optimizer.step()
                     self.optimizer.zero_grad()
 
+                    # Extract scalar values before deleting tensors
                     value_loss_epoch += value_loss.item()
                     action_loss_epoch += action_loss.item()
                     
-                    # Clear intermediate tensors to free memory
+                    # Clear intermediate tensors to free memory (after extracting values)
                     del obs_batch, output_ids_batch, actions_batch
                     del value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch
                     del adv_targ, values, action_log_probs, ratio, surr1, surr2
