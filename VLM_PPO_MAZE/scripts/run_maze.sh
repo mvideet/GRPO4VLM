@@ -1,11 +1,11 @@
 TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config_file config_zero2.yaml --main_process_port 29380 ../main.py \
     --env-name custom-maze-5x5 \
-    --init-lr 1e-5 \
-    --end-lr 1e-9 \
+    --init-lr 1e-4 \
+    --end-lr 1e-7 \
     --lr_max_steps 25 \
     --eval-num-per-episode 100 \
-    --num-env-steps 2000 \
-    --num-steps 64 \
+    --num-env-steps 50000 \
+    --num-steps 256 \
     --grad-accum-steps 16 \
     --max-new-tokens 64 \
     --thought-prob-coef 0.5 \
@@ -13,8 +13,9 @@ TOKENIZERS_PARALLELISM=false CUDA_VISIBLE_DEVICES="0" accelerate launch --config
     --seed 1 \
     --temperature 0.2 \
     --ppo-epoch 6 \
-    --mini-batch-size 1 \
-    --value-loss-coef 1.0 \
+    --mini-batch-size 8 \
+    --value-loss-coef 0.25 \
+    --max-grad-norm 0.5 \
     --model-path mvideet1/llava-mistral-7b-finetuned \
     --use-lora \
     --train-vision all \

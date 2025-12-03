@@ -36,8 +36,6 @@ class PPO():
 
     def update(self, rollouts):
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
-        advantages = (advantages - advantages.mean()) / (
-            advantages.std() + 1e-5)
 
         value_loss_epoch = 0
         action_loss_epoch = 0
@@ -53,6 +51,10 @@ class PPO():
                     obs_batch, output_ids_batch, actions_batch, \
                     value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
                             adv_targ = sample
+                    
+                    # Normalize advantages per batch (subtract mean, divide by std)
+                    if adv_targ is not None:
+                        adv_targ = (adv_targ - adv_targ.mean()) / (adv_targ.std() + 1e-5)
                     # Reshape to do in a single forward pass for all steps
                     values, action_log_probs = self.actor_critic.evaluate_actions(
                         obs_batch, output_ids_batch)

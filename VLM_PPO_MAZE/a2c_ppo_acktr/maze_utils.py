@@ -392,7 +392,7 @@ def compute_dense_reward(previous_pos, current_pos, goal_pos):
     goal = np.array(goal_pos)
     curr_distance = np.linalg.norm(curr_pos - goal)
     if curr_distance < 0.5:
-        return 50.0
+        return 400.0
 
     reward = -curr_distance
     
