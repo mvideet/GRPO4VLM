@@ -12,7 +12,6 @@ import time
 from collections import deque
 
 import gymnasium as gym
-import gym_maze
 import numpy as np
 import torch
 import torch.nn as nn
@@ -27,7 +26,6 @@ from a2c_ppo_acktr.model import VLMPolicy, VLMValue
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.llava_interface import llava_evaluate, llava_generate
 from a2c_ppo_acktr.llava_interface import init_pretrained_model, find_all_linear_names, load_lora_model
-from a2c_ppo_acktr.curriculum import MazeCurriculum
 
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
@@ -134,39 +132,23 @@ def main():
     value_model = VLMValue(base)
     value_model = value_model.to(model_device)
 
-    # Initialize curriculum learning if enabled
-    curriculum = None
-    if args.use_curriculum and ("maze" in args.env_name.lower() or "gym_maze" in args.env_name.lower() or args.env_name.startswith("custom-maze")):
-        curriculum = MazeCurriculum(
-            start_size=args.curriculum_start_size,
-            end_size=args.curriculum_end_size,
-            progression_criterion=args.curriculum_progression,
-            success_rate_threshold=args.curriculum_success_threshold,
-            min_episodes_per_size=args.curriculum_min_episodes,
-            updates_per_size=args.curriculum_updates_per_size,
-        )
-        print(f"Curriculum learning enabled: {args.curriculum_start_size}x{args.curriculum_start_size} -> {args.curriculum_end_size}x{args.curriculum_end_size}")
-        print(f"Progression criterion: {args.curriculum_progression}")
-        current_env_name = curriculum.get_current_env_name()
-        current_maze_size = curriculum.get_current_size()
-    else:
-        current_env_name = args.env_name
-        current_maze_size = None
+    # No curriculum: use a fixed maze environment
+    current_env_name = args.env_name
+    current_maze_size = None
 
-    # Create maze environment
-    if "maze" in args.env_name.lower() or "gym_maze" in args.env_name.lower() or (curriculum is not None):
+    # Create maze environment (no curriculum)
+    if "maze" in args.env_name.lower() or "gym_maze" in args.env_name.lower():
         envs = make_vec_envs(current_env_name, args.seed, args.num_processes,
                              args.gamma, None, device, False, 1, maze_size=current_maze_size)
     else:
-        print("Environment not supported. Please use a maze environment (e.g., 'maze-sample-5x5-v0')")
+        print("Environment not supported. Please use a maze environment (e.g., 'custom-maze-5x5')")
         exit(1)
 
 
     obs = envs.reset()
     infos = None
     ## Inputing Prompt here
-    # Use current environment name (may change with curriculum)
-    prompt_env_name = current_env_name if curriculum is not None else args.env_name
+    prompt_env_name = current_env_name
     qs = get_prompt(prompt_env_name, args.action_only_prompt, infos)
     qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
     conv = conv_templates[args.conv_mode].copy()
@@ -244,59 +226,7 @@ def main():
     prev_infos = []
     infos = []
     
-    # Track curriculum progression
-    last_curriculum_check = 0
-    curriculum_check_interval = 10  # Check every 10 updates
-    
     for j in tqdm(range(num_updates)):
-
-        # Check for curriculum progression
-        if curriculum is not None and (j - last_curriculum_check) >= curriculum_check_interval:
-            curriculum_info = curriculum.get_progress_info()
-            print(f"\n=== Curriculum Status ===")
-            print(f"Current maze size: {curriculum_info['current_size']}x{curriculum_info['current_size']}")
-            print(f"Progress: {curriculum_info['progress_percentage']:.1f}% ({curriculum_info['current_size_idx']+1}/{curriculum_info['total_sizes']})")
-            print(f"Episodes: {curriculum_info['episode_count']}, Successes: {curriculum_info['success_count']}")
-            if curriculum_info['episode_count'] > 0:
-                print(f"Success rate: {curriculum_info['current_success_rate']:.3f} (threshold: {curriculum_info['threshold']})")
-            
-            if curriculum.should_progress():
-                print(f"\n*** PROGRESSING TO NEXT MAZE SIZE ***")
-                if curriculum.progress():
-                    new_size = curriculum.get_current_size()
-                    new_env_name = curriculum.get_current_env_name()
-                    print(f"New maze size: {new_size}x{new_size}")
-                    print(f"New environment: {new_env_name}")
-                    
-                    # Close old environments
-                    envs.close()
-                    
-                    # Create new environments with new size
-                    envs = make_vec_envs(new_env_name, args.seed, args.num_processes,
-                                         args.gamma, None, device, False, 1, maze_size=new_size)
-                    
-                    # Reset observation space in rollouts
-                    obs = envs.reset()
-                    rollouts.obs[0].copy_(obs)
-                    
-                    # Update prompt for new environment
-                    qs = get_prompt(new_env_name, args.action_only_prompt, None)
-                    qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
-                    conv = conv_templates[args.conv_mode].copy()
-                    conv.append_message(conv.roles[0], qs)
-                    conv.append_message(conv.roles[1], None)
-                    prompt = conv.get_prompt()
-                    
-                    INPUT_IDS = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0)
-                    INPUT_IDS[INPUT_IDS == 0] = 259
-                    
-                    # Update projection function for new environment
-                    projection_f = partial(text_projection, env_name=new_env_name)
-                    actor_critic.projection_f = projection_f
-                    
-                    print(f"Environment updated successfully!")
-            
-            last_curriculum_check = j
 
         for step in range(args.num_steps):
             # Sample actions
@@ -309,8 +239,8 @@ def main():
             prev_infos = copy.deepcopy(infos)
             obs, reward, done, infos = envs.step(action)
 
-            # Use current environment name (may change with curriculum)
-            prompt_env_name = curriculum.get_current_env_name() if curriculum is not None else args.env_name
+            # Use fixed environment name (no curriculum)
+            prompt_env_name = args.env_name
             qs = get_prompt(prompt_env_name, args.action_only_prompt, infos)
             qs = DEFAULT_IMAGE_TOKEN + "\n" + qs
             conv = conv_templates[args.conv_mode].copy()
@@ -382,9 +312,6 @@ def main():
 
         rollouts.after_update()
         
-        # Record update for curriculum learning (if using updates criterion)
-        if curriculum is not None and args.curriculum_progression == "updates":
-            curriculum.record_update()
         if len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
@@ -454,17 +381,6 @@ def main():
                 }
                 
                 wandb.log({**step_metrics, **rollout_step_metrics, **episode_metrics, **training_metrics})
-            
-            # Log curriculum information
-            if curriculum is not None:
-                curriculum_info = curriculum.get_progress_info()
-                wandb.log({
-                    "curriculum.current_size": curriculum_info['current_size'],
-                    "curriculum.progress_percentage": curriculum_info['progress_percentage'],
-                    "curriculum.current_success_rate": curriculum_info['current_success_rate'],
-                    "curriculum.episode_count": curriculum_info['episode_count'],
-                    "curriculum.update_count": curriculum_info['update_count'],
-                })
             
             if (j + 1) % args.save_interval == 0:
                 save_dir = os.path.join(args.save_dir, args.env_name.replace('/', '_'))
