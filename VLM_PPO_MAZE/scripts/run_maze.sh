@@ -5,7 +5,7 @@ TOKENIZERS_PARALLELISM=false PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True CU
     --lr_max_steps 25 \
     --eval-num-per-episode 100 \
     --num-env-steps 50000 \
-    --num-steps 128 \
+    --num-steps 64 \
     --grad-accum-steps 16 \
     --max-new-tokens 64 \
     --thought-prob-coef 0.5 \
