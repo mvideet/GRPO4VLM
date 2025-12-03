@@ -30,14 +30,14 @@ def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
         output_ids = outputs['sequences']
         # Clear generation outputs to free memory
         del outputs
-    outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+    decoded_outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
     padded_output_ids = torch.zeros(output_ids.size(0), 2*args.max_new_tokens).to(dtype=output_ids.dtype, device = output_ids.device)
     padded_output_ids[:, :output_ids.size(1)] = output_ids
     # Clear original output_ids after padding
     del output_ids
     with torch.no_grad():
         values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef, tokenizer)
-    return values, padded_output_ids, outputs, sum_log_probs, action_tokens_log_prob
+    return values, padded_output_ids, decoded_outputs, sum_log_probs, action_tokens_log_prob
 
 def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature, thought_prob_coef, tokenizer = None):
     if output_ids.size(0) != 1:
@@ -91,9 +91,20 @@ def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature
             sum_log_prob = torch.tensor([-2]).to(base.device)
             action_tokens_log_prob = torch.tensor([-1]).to(base.device)
             return values, sum_log_prob, action_tokens_log_prob
+    
+    # Convert match_index to Python int for safe indexing
+    # Handle both tensor and scalar cases
+    if isinstance(match_index, torch.Tensor):
+        match_idx = int(match_index.item() if match_index.numel() == 1 else match_index)
+    else:
+        match_idx = int(match_index)
+    
+    # Ensure match_idx is at least 2 to avoid negative or zero indexing
+    match_idx = max(2, match_idx)
+    
     ## omitting the second token for calculating log prob, because its logprb is very very small
-    thought_log_prob = torch.sum(selected_log_probs[:,1:match_index-1], dim = 1)
+    thought_log_prob = torch.sum(selected_log_probs[:,1:match_idx-1], dim = 1)
 
-    action_tokens_log_prob = torch.sum(selected_log_probs[:,match_index-1:], dim = 1)
+    action_tokens_log_prob = torch.sum(selected_log_probs[:,match_idx-1:], dim = 1)
     sum_log_prob = thought_prob_coef*thought_log_prob + action_tokens_log_prob
     return values, sum_log_prob, action_tokens_log_prob

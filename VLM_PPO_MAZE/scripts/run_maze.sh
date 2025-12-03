@@ -6,7 +6,7 @@ TOKENIZERS_PARALLELISM=false PYTORCH_ALLOC_CONF=expandable_segments:True CUDA_VI
     --eval-num-per-episode 100 \
     --num-env-steps 50000 \
     --num-steps 64 \
-    --grad-accum-steps 16 \
+    --grad-accum-steps 32 \
     --max-new-tokens 64 \
     --thought-prob-coef 0.5 \
     --use-gae \

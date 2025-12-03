@@ -228,6 +228,11 @@ def main():
     
     for j in tqdm(range(num_updates)):
 
+        # Initialize variables for logging
+        last_text_action = "N/A"
+        last_action_log_prob = None
+        last_action_tokens_log_prob = None
+        
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():
@@ -236,6 +241,10 @@ def main():
                 value, output_id, action, action_log_prob, action_tokens_log_prob = actor_critic.act(
                         rollouts.obs[step], INPUT_IDS = INPUT_IDS)
             text_action = tokenizer.decode(list(filter(lambda num: num != 0, output_id[0].tolist())))
+            # Save for logging (last step will be used)
+            last_text_action = text_action
+            last_action_log_prob = action_log_prob
+            last_action_tokens_log_prob = action_tokens_log_prob
             prev_infos = copy.deepcopy(infos)
             obs, reward, done, infos = envs.step(action)
 
@@ -292,16 +301,19 @@ def main():
             rollouts.insert(obs, output_id, action,
                             action_log_prob, value, reward, masks, bad_masks)
             
-            # Clear step-level variables to free memory
+            # Clear step-level variables to free memory (after inserting into rollouts)
+            # Note: last_text_action, last_action_log_prob, last_action_tokens_log_prob already saved above
             del obs, output_id, action, action_log_prob, action_tokens_log_prob, value, reward, done, masks, bad_masks
         
         print("****** iteration number:{} (Step-by-Step PPO: {} steps collected, one action per step) ******".format(j, args.num_steps))
         print("prompt:{}".format(prompt))
-        print("text_action:{}".format(text_action))
+        print("text_action:{}".format(last_text_action))
         print("current observation:{}".format(prev_infos))
         print("ground truth:{}".format(infos))
-        print("action log prob:{}".format(action_log_prob))
-        print("action tokens log prob:{}".format(action_tokens_log_prob))
+        if last_action_log_prob is not None:
+            print("action log prob:{}".format(last_action_log_prob))
+        if last_action_tokens_log_prob is not None:
+            print("action tokens log prob:{}".format(last_action_tokens_log_prob))
         with torch.no_grad():
             next_value = actor_critic.get_value(
                 rollouts.obs[-1]).detach()
@@ -319,7 +331,7 @@ def main():
         
         # Delete intermediate variables to free memory
         del next_value
-        if 'text_action' in locals():
+        del last_text_action, last_action_log_prob, last_action_tokens_log_prob
             del text_action
         
         if len(episode_rewards) > 1:
