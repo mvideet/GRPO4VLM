@@ -1,5 +1,4 @@
 gymnasium
-gym-maze
 matplotlib
 pybullet
 stable-baselines3
