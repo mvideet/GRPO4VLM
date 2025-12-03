@@ -67,7 +67,11 @@ class VLMPolicy(nn.Module):
     def process_obs(self, obs):
         #process the observation with the image processor
         processed_images = obs
-        return self.image_processor.preprocess(processed_images, return_tensors='pt')['pixel_values'].to(dtype=self.base.dtype)
+        pixel_values = self.image_processor.preprocess(processed_images, return_tensors='pt')['pixel_values']
+        # Move to device and dtype, then delete original to save memory
+        result = pixel_values.to(dtype=self.base.dtype)
+        del pixel_values
+        return result
 
     def act(self, inputs, deterministic=False, INPUT_IDS=None):
         image_tensor = self.process_obs(inputs)

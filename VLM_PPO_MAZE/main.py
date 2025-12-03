@@ -285,13 +285,16 @@ def main():
                     step_counts_per_episode.append(running_step_count[i].item())
                     running_episode_rewards[i] = 0
                     running_step_count[i] = 0
-                    
-                    # Record episode for curriculum learning
+            
             # bad_mask is a legacy implementation of the storage.py file
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
             rollouts.insert(obs, output_id, action,
                             action_log_prob, value, reward, masks, bad_masks)
+            
+            # Clear step-level variables to free memory
+            del obs, output_id, action, action_log_prob, action_tokens_log_prob, value, reward, done, masks, bad_masks
+        
         print("****** iteration number:{} (Step-by-Step PPO: {} steps collected, one action per step) ******".format(j, args.num_steps))
         print("prompt:{}".format(prompt))
         print("text_action:{}".format(text_action))
@@ -309,6 +312,15 @@ def main():
         lr_scheduler.step()
 
         rollouts.after_update()
+        
+        # Clear GPU cache after update to free memory
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        # Delete intermediate variables to free memory
+        del next_value
+        if 'text_action' in locals():
+            del text_action
         
         if len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps

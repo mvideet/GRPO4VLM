@@ -28,9 +28,13 @@ def llava_generate(value_model, tokenizer, input_ids, image_tensor, args):
         return_dict_in_generate=True,
         pad_token_id=tokenizer.eos_token_id,)
         output_ids = outputs['sequences']
+        # Clear generation outputs to free memory
+        del outputs
     outputs = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
     padded_output_ids = torch.zeros(output_ids.size(0), 2*args.max_new_tokens).to(dtype=output_ids.dtype, device = output_ids.device)
     padded_output_ids[:, :output_ids.size(1)] = output_ids
+    # Clear original output_ids after padding
+    del output_ids
     with torch.no_grad():
         values, sum_log_probs, action_tokens_log_prob = llava_evaluate(value_model, input_ids, padded_output_ids, image_tensor, args.temperature, args.thought_prob_coef, tokenizer)
     return values, padded_output_ids, outputs, sum_log_probs, action_tokens_log_prob
@@ -52,14 +56,21 @@ def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature
         output_hidden_states = True,
         )
     scores = outputs.logits
+    hidden_states = outputs.hidden_states[-1]
+    # Clear outputs early to free memory
+    del outputs
 
     input_token_len = inputs_embeds.shape[1] - output_ids.shape[1]
-    hidden_states = outputs.hidden_states[-1][:, input_token_len-1]
+    hidden_states = hidden_states[:, input_token_len-1]
     values = value_model.value_head(hidden_states)
+    # Clear hidden_states after extracting value
+    del hidden_states
     scores = scores * (1/temperature)
     scores = scores.to(torch.float32)
     log_probs = torch.nn.functional.log_softmax(scores, dim=-1)
     log_probs = log_probs.to(torch.bfloat16)
+    # Clear scores after computing log_probs
+    del scores
     # omit the first outputted id which is decoder start token
     output_ids_mask = (output_ids != 0)[:, 1:]
     ## selected_log_probs counts the log prob of the first token

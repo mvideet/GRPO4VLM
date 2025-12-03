@@ -36,6 +36,7 @@ class PPO():
 
     def update(self, rollouts):
         advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
+        advantages = advantages.detach()  # Detach to free computation graph
 
         value_loss_epoch = 0
         action_loss_epoch = 0
@@ -107,9 +108,22 @@ class PPO():
 
                     value_loss_epoch += value_loss.item()
                     action_loss_epoch += action_loss.item()
+                    
+                    # Clear intermediate tensors to free memory
+                    del obs_batch, output_ids_batch, actions_batch
+                    del value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch
+                    del adv_targ, values, action_log_probs, ratio, surr1, surr2
+                    del action_loss, value_loss, loss
+                    if self.use_clipped_value_loss:
+                        del value_pred_clipped, value_losses, value_losses_clipped
 
         value_loss_epoch /= grad_step
         action_loss_epoch /= grad_step
         dist_entropy_epoch /= grad_step
+        
+        # Clear advantages and GPU cache after PPO update
+        del advantages
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         return value_loss_epoch, action_loss_epoch, dist_entropy_epoch
