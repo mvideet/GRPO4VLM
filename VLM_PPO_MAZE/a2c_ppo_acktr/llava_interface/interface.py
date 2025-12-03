@@ -95,16 +95,27 @@ def llava_evaluate(value_model, input_ids, output_ids, image_tensor, temperature
     # Convert match_index to Python int for safe indexing
     # Handle both tensor and scalar cases
     if isinstance(match_index, torch.Tensor):
-        match_idx = int(match_index.item() if match_index.numel() == 1 else match_index)
+        if match_index.numel() == 1:
+            match_idx = int(match_index.item())
+        else:
+            # If tensor has multiple elements, take the first one
+            match_idx = int(match_index[0].item() if match_index.dim() > 0 else match_index.item())
     else:
         match_idx = int(match_index)
     
     # Ensure match_idx is at least 2 to avoid negative or zero indexing
-    match_idx = max(2, match_idx)
+    # Also ensure it doesn't exceed selected_log_probs length
+    if len(selected_log_probs.shape) > 1:
+        max_idx = selected_log_probs.shape[1]
+    else:
+        max_idx = selected_log_probs.shape[0] if selected_log_probs.dim() > 0 else 1
+    match_idx = max(2, min(match_idx, max_idx))
     
     ## omitting the second token for calculating log prob, because its logprb is very very small
-    thought_log_prob = torch.sum(selected_log_probs[:,1:match_idx-1], dim = 1)
+    # Slice [1:match_idx-1] is safe because match_idx >= 2, so match_idx-1 >= 1
+    # If match_idx == 2, the slice is empty (sum = 0), which is fine
+    thought_log_prob = torch.sum(selected_log_probs[:, 1:match_idx-1], dim = 1)
 
-    action_tokens_log_prob = torch.sum(selected_log_probs[:,match_idx-1:], dim = 1)
+    action_tokens_log_prob = torch.sum(selected_log_probs[:, match_idx-1:], dim = 1)
     sum_log_prob = thought_prob_coef*thought_log_prob + action_tokens_log_prob
     return values, sum_log_prob, action_tokens_log_prob

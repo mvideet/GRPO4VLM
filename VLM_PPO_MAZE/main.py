@@ -332,7 +332,6 @@ def main():
         # Delete intermediate variables to free memory
         del next_value
         del last_text_action, last_action_log_prob, last_action_tokens_log_prob
-            del text_action
         
         if len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps

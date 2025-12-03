@@ -48,7 +48,6 @@ class PPO():
                     advantages, self.mini_batch_size)
             for sample in data_generator:
                 with self.accelerator.accumulate(self.actor_critic):
-                    grad_step += 1
                     obs_batch, output_ids_batch, actions_batch, \
                     value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, \
                             adv_targ = sample
@@ -61,7 +60,9 @@ class PPO():
                         obs_batch, output_ids_batch)
                     #values and action_log_probs on two different devices!! because they come from two llava
                     if torch.isnan(action_log_probs).any():
+                        # Skip this batch if NaN detected, but don't increment grad_step
                         continue
+                    grad_step += 1  # Only increment after NaN check
                     old_action_log_probs_batch = old_action_log_probs_batch.to(action_log_probs.device).view(-1)
                     adv_targ = adv_targ.to(action_log_probs.device)
                     value_preds_batch = value_preds_batch.to(values.device)
@@ -118,9 +119,17 @@ class PPO():
                     if self.use_clipped_value_loss:
                         del value_pred_clipped, value_losses, value_losses_clipped
 
-        value_loss_epoch /= grad_step
-        action_loss_epoch /= grad_step
-        dist_entropy_epoch /= grad_step
+        # Avoid division by zero if no valid gradient steps were taken
+        if grad_step > 0:
+            value_loss_epoch /= grad_step
+            action_loss_epoch /= grad_step
+            dist_entropy_epoch /= grad_step
+        else:
+            # If no valid steps, return zeros (shouldn't happen in normal training)
+            print("Warning: No valid gradient steps taken in PPO update!")
+            value_loss_epoch = 0.0
+            action_loss_epoch = 0.0
+            dist_entropy_epoch = 0.0
         
         # Clear advantages and GPU cache after PPO update
         del advantages
