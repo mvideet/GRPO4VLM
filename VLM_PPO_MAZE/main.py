@@ -133,8 +133,8 @@ def main():
     value_model = value_model.to(model_device)
 
     # No curriculum: use a fixed maze environment
-        current_env_name = args.env_name
-        current_maze_size = None
+    current_env_name = args.env_name
+    current_maze_size = None
 
     # Create maze environment (no curriculum)
     if "maze" in args.env_name.lower() or "gym_maze" in args.env_name.lower():
