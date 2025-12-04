@@ -27,7 +27,7 @@ class VLMValue(nn.Module):
             nn.ReLU(), # Non-linearity
             nn.Linear(512, 1) # Output layer
             ).to(base.device, dtype=torch.float16) # Move to specified device with dtype
-        
+
         # Initialize value head weights to small values to prevent extreme outputs
         for module in self.value_head:
             if isinstance(module, nn.Linear):

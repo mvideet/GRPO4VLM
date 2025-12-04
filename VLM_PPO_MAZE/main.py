@@ -133,8 +133,8 @@ def main():
     value_model = value_model.to(model_device)
 
     # No curriculum: use a fixed maze environment
-    current_env_name = args.env_name
-    current_maze_size = None
+        current_env_name = args.env_name
+        current_maze_size = None
 
     # Create maze environment (no curriculum)
     if "maze" in args.env_name.lower() or "gym_maze" in args.env_name.lower():
@@ -232,7 +232,7 @@ def main():
         last_text_action = "N/A"
         last_action_log_prob = None
         last_action_tokens_log_prob = None
-        
+
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():
@@ -298,7 +298,7 @@ def main():
                     step_counts_per_episode.append(running_step_count[i].item())
                     running_episode_rewards[i] = 0
                     running_step_count[i] = 0
-            
+                    
             # bad_mask is a legacy implementation of the storage.py file
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0] for info in infos])
@@ -415,11 +415,11 @@ def main():
                 # Training metrics
                 training_metrics = {
                     "iteration": j,
-                    "num_timesteps": total_num_steps,
-                    "FPS": int(total_num_steps / (end - start)),
-                    "distribution_entropy": dist_entropy,
-                    "value.loss": value_loss,
-                    "action.loss": action_loss,
+                        "num_timesteps": total_num_steps,
+                        "FPS": int(total_num_steps / (end - start)),
+                        "distribution_entropy": dist_entropy,
+                        "value.loss": value_loss,
+                        "action.loss": action_loss,
                 }
                 
                 wandb.log({**step_metrics, **rollout_step_metrics, **episode_metrics, **training_metrics})

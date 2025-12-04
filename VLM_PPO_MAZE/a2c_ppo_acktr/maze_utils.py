@@ -406,7 +406,7 @@ def compute_dense_reward(previous_pos, current_pos, goal_pos):
     else:
         # First step: no previous position, use negative distance as baseline
         reward = -curr_distance
-    
+        reward -= 0.02
     # Add goal bonus if reached goal
     if reached_goal:
         goal_bonus = 5

@@ -305,6 +305,22 @@ def main():
                         "value.mean": rollouts.value_preds.mean().item(),
                         "value.std": rollouts.value_preds.std().item(),})
 
+            # Save checkpoints periodically
+            if (j + 1) % args.save_interval == 0:
+                save_dir = os.path.join(args.save_dir, args.env_name.replace('/', '_'))
+                os.makedirs(save_dir, exist_ok=True)
+                ckpt_path = os.path.join(save_dir, f"ckpt_update_{j+1}.pt")
+                checkpoint = {
+                    "update": j + 1,
+                    "total_num_steps": total_num_steps,
+                    "model_state_dict": actor_critic.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
+                    "args": args,
+                }
+                torch.save(checkpoint, ckpt_path)
+                print(f"Saved checkpoint to {ckpt_path}")
+
 if __name__ == "__main__":
     main()
 
