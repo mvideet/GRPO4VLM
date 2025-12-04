@@ -9,6 +9,7 @@ from prompts import ACTIONS_START, ACTIONS_END
 from maze_dataset import MazeDatasetGenerator
 from maze_env import grpo_act
 from config import MazeGRPOConfig
+from transformers import TrainerCallback
 
 # Action mapping from text to indices
 ACTION_TEXT_TO_IDX = {
@@ -87,10 +88,16 @@ def maze_execution_reward_func(
     - Solved: solve_reward + efficiency bonus
     - Partial: dense reward based on distance improvement * partial_credit_weight
     - Invalid actions: -1.0
+    
+    Also stores execution rewards in a global list for success rate tracking.
     """
     config = MazeGRPOConfig()  # Get config to use reward weights
     scores = []
     generator = MazeDatasetGenerator(config)
+    
+    # Store execution rewards for success rate tracking (accessible to callbacks)
+    if not hasattr(maze_execution_reward_func, '_execution_rewards'):
+        maze_execution_reward_func._execution_rewards = []
     
     for i, completion in enumerate(completions):
         # Parse actions from completion
@@ -137,5 +144,64 @@ def maze_execution_reward_func(
             print(f"Error executing maze actions: {e}")
             scores.append(-1.0)
     
+    # Store execution rewards for success rate computation
+    maze_execution_reward_func._execution_rewards.extend(scores)
+    
+    # Debug: log batch size info (only first time to avoid spam)
+    if not hasattr(maze_execution_reward_func, '_logged_batch_info'):
+        print(f"[DEBUG] Reward function called with {len(completions)} completions")
+        maze_execution_reward_func._logged_batch_info = True
+    
     return scores
+
+
+class SuccessRateCallback(TrainerCallback):
+    """
+    Callback to compute and log success rate based on execution rewards.
+    Success is defined as execution_reward >= 10.0 (maze solved).
+    """
+    
+    def __init__(self, success_threshold: float = 10.0):
+        super().__init__()
+        self.success_threshold = success_threshold
+        self.last_reward_count = 0
+    
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        """Called when metrics are logged. Compute success rate from execution rewards."""
+        if logs is None:
+            return control
+        
+        # Get execution rewards from the reward function
+        if hasattr(maze_execution_reward_func, '_execution_rewards'):
+            execution_rewards = maze_execution_reward_func._execution_rewards
+            
+            # Only compute if we have new rewards since last log
+            if len(execution_rewards) > self.last_reward_count:
+                # Get new rewards since last computation
+                new_rewards = execution_rewards[self.last_reward_count:]
+                self.last_reward_count = len(execution_rewards)
+                
+                # Compute success rate (execution_reward >= threshold means solved)
+                successes = sum(1 for r in new_rewards if r >= self.success_threshold)
+                total = len(new_rewards)
+                success_rate = successes / total if total > 0 else 0.0
+                
+                # Log to wandb/metrics
+                logs['success_rate'] = success_rate
+                logs['success_count'] = successes
+                # Note: total_attempts is per gradient accumulation micro-batch
+                # With gradient_accumulation_steps=2, this = (batch_size/2) * num_generations = 2 * 4 = 8
+                logs['total_attempts'] = total
+                
+                # Also log cumulative success rate
+                cumulative_successes = sum(1 for r in execution_rewards if r >= self.success_threshold)
+                cumulative_rate = cumulative_successes / len(execution_rewards) if len(execution_rewards) > 0 else 0.0
+                logs['success_rate_cumulative'] = cumulative_rate
+            else:
+                # No new rewards since last log - log zeros to maintain consistency
+                logs['success_rate'] = 0.0
+                logs['success_count'] = 0
+                logs['total_attempts'] = 0
+        
+        return control
 

@@ -94,10 +94,6 @@ class MazeDatasetGenerator:
             for i in range(self.config.num_mazes_per_size):
                 seed = hash((maze_size, i)) % (2**32)
                 maze_data = self.generate_single_maze(maze_size, seed)
-                
-                # Store env reference separately (can't serialize to HF dataset)
-                # We'll recreate envs during reward computation
-                # Ensure all list fields are consistently lists
                 agent_pos = maze_data['agent_pos']
                 goal_pos = maze_data['goal_pos']
                 data.append({

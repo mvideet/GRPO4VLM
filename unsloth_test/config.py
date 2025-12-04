@@ -33,13 +33,13 @@ class MazeGRPOConfig:
     max_prompt_length: int = 1024
     max_completion_length: int = 512
     max_steps: int = 2000
-    save_steps: int = 50
+    save_steps: int = 1000
     
     # Reward weights
-    format_reward: float = 3.0
-    solve_reward: float = 1000.0
+    format_reward: float = 1.0
+    solve_reward: float = 10.0
     efficiency_bonus: float = 0.1
-    partial_credit_weight: float = 50.0
+    partial_credit_weight: float = 5.0
     
     # Curriculum learning settings
     use_curriculum: bool = True

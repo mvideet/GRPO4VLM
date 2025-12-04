@@ -3239,6 +3239,16 @@ class _UnslothGRPOTrainer(BaseTrainer):
         elif self.loss_type == "dapo":
             normalizer = inputs["num_items_in_batch"] / self.accelerator.num_processes
             loss = (per_token_loss * completion_mask).sum() / normalizer
+        elif self.loss_type == "gmpo":
+            pt = per_token_logs * completion_mask
+            sign = torch.sign(advantages).unsqueeze(1)
+            epsilon = 1e-8
+            pt_mag = torch.abs(pt) + epsilon
+            lengths = completion_mask.sum(-1).clamp(min=1.0)
+            geometric_mean = torch.exp(torch.log(pt_mag).sum(-1) / lengths)
+            gm = geometric_mean * sign.squeeze(-1)
+            loss = -gm.mean()
+            loss = loss / self.current_gradient_accumulation_steps
         else:
             raise ValueError(f"Unknown loss type: {self.loss_type}")
 

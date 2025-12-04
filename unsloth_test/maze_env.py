@@ -28,19 +28,13 @@ class SyntheticMazeGymAdapter(gym.Env):
         self.maze_size = maze_size if isinstance(maze_size, (tuple, list)) else (maze_size, maze_size)
         self.synthetic_env = SyntheticMazeEnv(size=self.maze_size, seed=seed)
         self.max_image_size = max_image_size
-        
-        # Calculate cell size for rendering
         max_dim = max(self.maze_size)
         self.cell_size = max(10, int(max_image_size / max_dim))
-        
-        # Define observation space (image)
         height = self.maze_size[0] * self.cell_size
         width = self.maze_size[1] * self.cell_size
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=(height, width, 3), dtype=np.uint8
         )
-        
-        # Define action space (4 discrete actions)
         self.action_space = gym.spaces.Discrete(4)
         
         self._last_info = {}

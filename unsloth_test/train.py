@@ -11,7 +11,7 @@ os.environ["UNSLOTH_VLLM_STANDBY"] = "1"
 from config import MazeGRPOConfig
 from maze_dataset import MazeDatasetGenerator
 from prompts import make_conversation
-from rewards import formatting_reward_func, maze_execution_reward_func
+from rewards import formatting_reward_func, maze_execution_reward_func, SuccessRateCallback
 from curriculum import CurriculumLearningCallback, CurriculumTrainerCallback
 
 
@@ -37,6 +37,7 @@ def main():
         config={
             "model": "gemma-3-4b-it",
             "lora_r": 16,
+            "GRPO_type": "token_level",
             "learning_rate": 5e-6,
             "maze_sizes": [(5,5), (7,7), (10,10)],
             "batch_size": 1,
@@ -165,7 +166,7 @@ def main():
         max_grad_norm=0.1,
         report_to="wandb",
         output_dir="maze_grpo_outputs",
-        importance_sampling_level="sequence",
+        importance_sampling_level="sequence", # GSPO
         mask_truncated_completions=False,
         loss_type='dr_grpo',
     )
@@ -173,6 +174,11 @@ def main():
     # Create trainer with both reward functions
     # Create callbacks list properly
     trainer_callbacks = []
+    
+    # Add success rate tracking callback
+    success_rate_callback = SuccessRateCallback(success_threshold=10.0)
+    trainer_callbacks.append(success_rate_callback)
+    
     curriculum_trainer_callback = None
     if config.use_curriculum:
         curriculum_trainer_callback = CurriculumTrainerCallback(curriculum_callback)
@@ -205,7 +211,10 @@ def main():
     # -------------------------------------------------------------------------
     print("\n[5/5] Starting training...")
     print("=" * 60)
-    print("Watch the 'reward' column - it should increase over time!")
+    print("Key metrics to watch:")
+    print("  - 'reward': Mean total reward (should increase over time)")
+    print("  - 'success_rate': Fraction of mazes solved (execution_reward >= 10)")
+    print("  - 'rewards/maze_execution_reward_func': Mean execution reward")
     print("Be patient - first 50-100 steps may show low rewards.")
     print("=" * 60)
     
