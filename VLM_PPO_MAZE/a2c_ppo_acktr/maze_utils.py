@@ -391,10 +391,26 @@ def compute_dense_reward(previous_pos, current_pos, goal_pos):
     curr_pos = np.array(current_pos)
     goal = np.array(goal_pos)
     curr_distance = np.linalg.norm(curr_pos - goal)
-    if curr_distance < 0.5:
-        return 400.0
-
-    reward = -curr_distance
+    
+    # Check if reached goal: agent is in same cell as goal (discrete maze)
+    # Convert to integer cell coordinates for robust comparison
+    agent_cell = (int(round(curr_pos[0])), int(round(curr_pos[1])))
+    goal_cell = (int(round(goal[0])), int(round(goal[1])))
+    reached_goal = (agent_cell == goal_cell)
+    
+    # Compute reward: delta distance (positive if moving closer)
+    if previous_pos is not None:
+        prev_pos = np.array(previous_pos)
+        prev_distance = np.linalg.norm(prev_pos - goal)
+        reward = prev_distance - curr_distance  # Positive if moving closer
+    else:
+        # First step: no previous position, use negative distance as baseline
+        reward = -curr_distance
+    
+    # Add goal bonus if reached goal
+    if reached_goal:
+        goal_bonus = 5
+        reward += goal_bonus
     
     return float(reward)
 
@@ -512,9 +528,9 @@ class DenseRewardWrapper(gym.Wrapper):
             if current_pos is None:
                 current_pos = self.previous_pos
             
-            # Compute dense reward (negative euclidean distance from goal)
+            # Compute dense reward (delta distance: prev_dist - curr_dist)
             dense_reward = compute_dense_reward(
-                None, current_pos, self.goal_pos
+                self.previous_pos, current_pos, self.goal_pos
             )
             
             # Update previous position
@@ -552,9 +568,9 @@ class DenseRewardWrapper(gym.Wrapper):
             if current_pos is None:
                 current_pos = self.previous_pos
             
-            # Compute dense reward (negative euclidean distance from goal)
+            # Compute dense reward (delta distance: prev_dist - curr_dist)
             dense_reward = compute_dense_reward(
-                None, current_pos, self.goal_pos
+                self.previous_pos, current_pos, self.goal_pos
             )
             
             # Update previous position

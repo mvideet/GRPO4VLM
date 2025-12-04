@@ -190,6 +190,20 @@ class PPO():
                     self.optimizer.step()
                     self.optimizer.zero_grad()
 
+                    # Compute entropy from action log_probs
+                    # For discrete actions, entropy = -sum(p_i * log(p_i))
+                    # Since we have log_probs of selected actions: p = exp(log_prob)
+                    # entropy ≈ mean(-exp(log_prob) * log_prob) = mean(-p * log(p))
+                    # This gives proper entropy: higher when uncertain, lower when confident
+                    probs = torch.exp(action_log_probs)
+                    # Clamp probs to avoid numerical issues
+                    probs = torch.clamp(probs, min=1e-8, max=1.0)
+                    # Compute entropy: -p * log(p) = -p * log_prob (since log(p) = log_prob)
+                    batch_entropy = (-probs * action_log_probs).mean().item()
+                    # Ensure entropy is non-negative
+                    batch_entropy = max(0.0, batch_entropy)
+                    dist_entropy_epoch += batch_entropy
+                    
                     # Extract scalar values before deleting tensors
                     value_loss_epoch += value_loss.item()
                     action_loss_epoch += action_loss.item()

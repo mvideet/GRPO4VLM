@@ -277,13 +277,17 @@ def main():
                     agent_pos = info.get('agent_pos') if isinstance(info, dict) else None
                     goal_pos = info.get('goal_pos') if isinstance(info, dict) else None
                     
+                    # Success if agent is in same cell as goal (discrete maze)
                     if agent_pos is not None and goal_pos is not None:
-                        # Success if agent is at goal (within 0.5 units tolerance)
-                        distance = np.linalg.norm(np.array(agent_pos) - np.array(goal_pos))
-                        is_success = distance < 0.5
+                        agent_pos_arr = np.array(agent_pos)
+                        goal_pos_arr = np.array(goal_pos)
+                        # Convert to integer cell coordinates for robust comparison
+                        agent_cell = (int(round(agent_pos_arr[0])), int(round(agent_pos_arr[1])))
+                        goal_cell = (int(round(goal_pos_arr[0])), int(round(goal_pos_arr[1])))
+                        is_success = (agent_cell == goal_cell)
                     else:
-                        # Fallback: check if episode ended with positive reward (goal reached)
-                        is_success = episode_reward > 0
+                        # If positions are not available, mark as failure
+                        is_success = False
                     
                     if is_success:
                         episode_success_rate.append(1)
