@@ -1,3 +1,7 @@
+**Here is the link to the paper/write-up: https://drive.google.com/file/d/1SoMVqfbC22m-AvyMH7A9Qq6-AnB65xE9/view?usp=sharing
+
+
+
 # Fine-Tuning Large Vision-Language Models as Decision-Making Agents via Reinforcement Learning
 
 [Yuexiang Zhai](https://yx-s-z.github.io/)*, [Hao Bai](https://www.jackgethome.com/)†, [Zipeng Lin](https://zipeng-lin.github.io/)†, [Jiayi Pan](https://www.jiayipan.me/)†, [Shengbang Tong](https://tsb0601.github.io/petertongsb/)†, [Yifei Zhou](https://yifeizhou02.github.io/)†
